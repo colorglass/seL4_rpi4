@@ -20,7 +20,7 @@ typedef struct Telem_Data {
 #define serial_printf(...) do { \
     char __str[256]; \
     sprintf(__str, __VA_ARGS__); \
-    for (int i=0; i<sizeof(__str) && __str[i]; i++) { \
+    for (uint32_t i=0; i<sizeof(__str) && __str[i]; i++) { \
         ps_cdev_putchar(serial, __str[i]); \
     } \
 } while (0)
@@ -59,7 +59,7 @@ typedef struct queue {
             LOG_ERROR("Cannot enquque"); \
             _ret = -1; \
         } else {\
-        int _index = ((q)->head + (q)->size) % MAX_QUEUE_SIZE; \
+        uint32_t _index = ((q)->head + (q)->size) % MAX_QUEUE_SIZE; \
         (q)->raw_queue[_index] = x; \
         (q)->size++; \
         _ret = 0; \
@@ -87,8 +87,8 @@ typedef struct queue {
         char _str[MAX_QUEUE_SIZE * 3 + 1]; \
         char *_p = _str; \
         LOG_ERROR("Print queue:"); \
-        int size = (q)->size; \
-        for (int h = (q)->head, i = 0; i < size; i++, h = (h+1) % MAX_QUEUE_SIZE) { \
+        uint32_t size = (q)->size; \
+        for (uint32_t h = (q)->head, i = 0; i < size; i++, h = (h+1) % MAX_QUEUE_SIZE) { \
             sprintf(_p, "%02X ", (q)->raw_queue[h]); \
             _p += 3; \
         } \

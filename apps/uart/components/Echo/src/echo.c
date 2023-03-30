@@ -9,10 +9,9 @@ static ps_chardevice_t *serial = NULL;
 
 static void handle_char(uint8_t c) {
     ZF_LOGE("In handle_char %c", c);
-    ps_cdev_putchar(serial, '0');
-    ps_cdev_putchar(serial, ':');
-    ps_cdev_putchar(serial, c);
-    ps_cdev_putchar(serial, '\n');
+    char buf[8];
+    sprintf(buf, "3:%c\n\r", c);
+    ps_cdev_write(serial, buf, strlen(buf), NULL, NULL);
 }
 
 void serial_irq_handle(void *data, ps_irq_acknowledge_fn_t acknowledge_fn, void *ack_data) {
@@ -65,7 +64,7 @@ void pre_init() {
     error = camkes_io_ops(&io_ops);
     ZF_LOGF_IF(error, "Failed to initialise IO ops");
 
-    serial = ps_cdev_init(BCM2xxx_UART0, &io_ops, &serial_device);
+    serial = ps_cdev_init(BCM2xxx_UART3, &io_ops, &serial_device);
     if (serial == NULL) {
         ZF_LOGE("Failed to initialise char device");
     } else {
@@ -75,7 +74,7 @@ void pre_init() {
     ps_irq_t irq_info = {
         .type = PS_INTERRUPT,
         .irq = {
-            .number = UART0_IRQ,
+            .number = UART3_IRQ,
         }
     };
     irq_id_t serial_irq_id = ps_irq_register(&io_ops.irq_ops, irq_info, serial_irq_handle, NULL);

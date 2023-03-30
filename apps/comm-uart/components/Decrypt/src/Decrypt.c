@@ -72,13 +72,13 @@ static int Decrypt_Telem_Data_to_FC_Data() {
             error = -1;
             break;
         }
-        // putchar(tmp);
         if (enqueue(&send_queue, tmp)) {
             error = -1;
             break;
         }
     }
 
+    // Must in reverse order
     recv_unlock();
     send_unlock();
 

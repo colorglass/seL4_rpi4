@@ -70,14 +70,14 @@ static void Encrypt_FC_Data_to_Telem_Data() {
         if (dequeue(&recv_queue, &tmp)) {
             break;
         }
-        // putchar(tmp);
         if (enqueue(&send_queue, tmp)) {
             break;
         }
     }
 
+    // Must in reverse order
     recv_unlock();
-    send_lock();
+    send_unlock();
 }
 
 // Send encrypted Telem data to Telemetry

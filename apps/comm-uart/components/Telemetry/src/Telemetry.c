@@ -3,6 +3,7 @@
 #include <camkes/io.h>
 #include <platsupport/chardev.h>
 #include <platsupport/io.h>
+#include <sys/types.h>
 #include <utils/util.h>
 
 #include <stdint.h>
@@ -88,7 +89,7 @@ static int telemetry_tx_poll() {
     int error = 0;
     send_lock();
 
-    int size = send_queue.size;
+    uint32_t size = send_queue.size;
     uint8_t c;
 
     // if (!queue_empty(&send_queue)) {
@@ -115,8 +116,8 @@ static int telemetry_tx_poll() {
 static int send_to_decrypt(void) {
     int error = 0;
 
-    int queue_size;
-    int data_size;
+    uint32_t queue_size;
+    uint32_t data_size;
 
     // Wait for RX to push some data into recv_queue
     while (1) {

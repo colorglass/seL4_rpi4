@@ -216,7 +216,7 @@ static int uart_tx_poll(void) {
     //     // print_queue_serial(&send_queue);
     // }
 
-    int size = send_queue.size;
+    uint32_t size = send_queue.size;
     uint8_t c;
     for (uint32_t i = 0; i < size; i++) {
         if (!dequeue(&send_queue, &c)) {
