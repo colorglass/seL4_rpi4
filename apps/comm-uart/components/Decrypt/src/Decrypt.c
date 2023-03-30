@@ -101,6 +101,7 @@ static int send_to_uart(void) {
             send_FC_Data_Decrypt2UART_release();
         } else {
             LOG_ERROR("Should not get here");
+            send_FC_Data_Decrypt2UART_release();
             error = -1;
             data_size = 0;
             break;
@@ -110,7 +111,7 @@ static int send_to_uart(void) {
 
     unlock();
 
-    LOG_ERROR("To uart");
+    // LOG_ERROR("To uart");
     // Decrypt => UART
     emit_Decrypt2UART_DataReadyEvent_emit();
 
@@ -125,15 +126,16 @@ static int read_from_telemetry(void) {
     // Protect recv_queue
     lock();
 
-    recv_Telem_Data_Telemetry2Decrypt_acquire();
     Telem_Data *telem_data = (Telem_Data *) recv_Telem_Data_Telemetry2Decrypt;
     uint32_t size = telem_data->len;
+    recv_Telem_Data_Telemetry2Decrypt_acquire();
     for (uint32_t i = 0; i < size; i++) {
         if (enqueue(&recv_queue, telem_data->raw_data[i])) {
             LOG_ERROR("Receive queue full!");
             error = -1;
             break;
         }
+        recv_Telem_Data_Telemetry2Decrypt_acquire();
     }
 
     unlock();

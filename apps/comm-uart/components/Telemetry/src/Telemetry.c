@@ -1,3 +1,4 @@
+#include "camkes-component-telemetry.h"
 #include <camkes.h>
 #include <camkes/io.h>
 #include <platsupport/chardev.h>
@@ -64,7 +65,7 @@ static int telemetry_rx_poll() {
     }
     unlock();
 
-    LOG_ERROR("RX: %c", c);
+    // LOG_ERROR("RX: %c", c);
 
     return 0;
 }
@@ -76,17 +77,17 @@ static int telemetry_tx_poll() {
     int size = send_queue.size;
     uint8_t c;
 
-    if (!queue_empty(&send_queue)) {
-        print_queue(&send_queue);
-        // print_queue_serial(&send_queue);
-    }
+    // if (!queue_empty(&send_queue)) {
+    //     print_queue(&send_queue);
+    //     // print_queue_serial(&send_queue);
+    // }
 
     for (uint32_t i=0; i < size; i++) {
         if (!dequeue(&send_queue, &c)) {
             ps_cdev_putchar(serial, c);
         } else {
-            unlock();
             error = -1;
+            break;
         }
     }
 
@@ -135,7 +136,7 @@ static int send_to_decrypt(void) {
     telem_data->len = data_size;
     unlock();
 
-    LOG_ERROR("To decrypt");
+    // LOG_ERROR("To decrypt");
     // Telemetry => Decrypt
     emit_Telemetry2Decrypt_DataReadyEvent_emit();
 
@@ -165,7 +166,6 @@ void consume_Telemetry2Decrypt_DataReadyAck__init() {
 static int read_from_encrypt(void) {
     int error = 0;
 
-    recv_Telem_Data_Encrypt2Telemetry_acquire();
     Telem_Data *telem_data = (Telem_Data *) recv_Telem_Data_Encrypt2Telemetry;
     
     lock();
@@ -173,13 +173,18 @@ static int read_from_encrypt(void) {
     if (telem_data->len + send_queue.size > MAX_QUEUE_SIZE) {
         LOG_ERROR("Send queue not enough!");
     }
+    recv_Telem_Data_Encrypt2Telemetry_acquire();
 
-    for (uint32_t i=0; i < telem_data->len; i++) {
+    uint32_t data_len = telem_data->len;
+    recv_Telem_Data_Encrypt2Telemetry_acquire();
+    for (uint32_t i=0; i < data_len; i++) {
         if (enqueue(&send_queue, telem_data->raw_data[i])) {
             LOG_ERROR("Send queue full!");
+            recv_Telem_Data_Encrypt2Telemetry_acquire();
             error = -1;
             break;
         }
+        recv_Telem_Data_Encrypt2Telemetry_acquire();
     }
 
     unlock();

@@ -63,7 +63,7 @@ static int send_to_encrypt(void) {
     uint32_t queue_size;
     uint32_t data_size;
 
-    // Wait until send_queue is not empty
+    // Wait until recv_queue is not empty
     while (1) {
         lock();
         queue_size = recv_queue.size;
@@ -96,7 +96,7 @@ static int send_to_encrypt(void) {
 
     unlock();
 
-    LOG_ERROR("To encrypt");
+    // LOG_ERROR("To encrypt");
     // Tell Encrypt that data is ready
     emit_UART2Encrypt_DataReadyEvent_emit();
 
@@ -108,21 +108,25 @@ static int send_to_encrypt(void) {
 static int read_from_decrypt(void) {
     int error = 0;
 
-    recv_FC_Data_Decrypt2UART_acquire();
     FC_Data *fc_data = (FC_Data *) recv_FC_Data_Decrypt2UART;
 
     lock();
 
-    if (fc_data->len + send_queue.size > MAX_QUEUE_SIZE) {
+    uint32_t data_len = fc_data->len;
+    recv_FC_Data_Decrypt2UART_acquire();
+    if (data_len + send_queue.size > MAX_QUEUE_SIZE) {
         LOG_ERROR("Receivce queue not enough!");
     }
+    recv_FC_Data_Decrypt2UART_acquire();
 
-    for (uint32_t i = 0; i < fc_data->len; i++) {
+    for (uint32_t i = 0; i < data_len; i++) {
         if (enqueue(&send_queue, fc_data->raw_data[i])) {
             LOG_ERROR("Receive queue full!");
+            recv_FC_Data_Decrypt2UART_acquire();
             error = -1;
             break;
         }
+        recv_FC_Data_Decrypt2UART_acquire();
     }
 
     unlock();
@@ -183,7 +187,7 @@ static int uart_rx_poll(void) {
     }
     unlock();
 
-    LOG_ERROR("RX: %c", c);
+    // LOG_ERROR("RX: %c", c);
 
     return 0;
 }
@@ -193,10 +197,10 @@ static int uart_tx_poll(void) {
     int error = 0;
     lock();
 
-    if (!queue_empty(&send_queue)) {
-        print_queue(&send_queue);
-        // print_queue_serial(&send_queue);
-    }
+    // if (!queue_empty(&send_queue)) {
+    //     print_queue(&send_queue);
+    //     // print_queue_serial(&send_queue);
+    // }
 
     int size = send_queue.size;
     uint8_t c;

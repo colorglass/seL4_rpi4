@@ -5,13 +5,13 @@
 #include <string.h>
 #include <utils/util.h>
 
-typedef uint8_t FC_Data_raw [256];
+typedef uint8_t FC_Data_raw [508];
 typedef struct FC_Data {
     FC_Data_raw raw_data;
     uint32_t len;
 } FC_Data;
 
-typedef uint8_t Telem_Data_raw [256];
+typedef uint8_t Telem_Data_raw [508];
 typedef struct Telem_Data {
     Telem_Data_raw raw_data;
     uint32_t len;
@@ -28,7 +28,7 @@ typedef struct Telem_Data {
 /*
  * Queue
  */
-#define MAX_QUEUE_SIZE 1024
+#define MAX_QUEUE_SIZE 4096
 typedef struct queue {
     uint8_t raw_queue[MAX_QUEUE_SIZE];
     uint32_t head;

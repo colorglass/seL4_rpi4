@@ -110,7 +110,7 @@ static int send_to_telemetry(void) {
 
     unlock();
 
-    LOG_ERROR("To telemetry");
+    // LOG_ERROR("To telemetry");
     // Encrypt => Telemetry
     emit_Encrypt2Telemetry_DataReadyEvent_emit();
 
@@ -125,16 +125,18 @@ static int read_from_uart(void) {
     // Protect recv_queue
     lock();
 
-    recv_FC_Data_UART2Encrypt_acquire();
     FC_Data *fc_data = (FC_Data *) recv_FC_Data_UART2Encrypt;
     uint32_t size = fc_data->len;
+    recv_FC_Data_UART2Encrypt_acquire();
 
     for (uint32_t i = 0; i < size; i++) {
         if (enqueue(&recv_queue, fc_data->raw_data[i])) {
             LOG_ERROR("Receive queue full!");
+            recv_FC_Data_UART2Encrypt_acquire();
             error = -1;
             break;
         }
+        recv_FC_Data_UART2Encrypt_acquire();
     }
 
     unlock();
