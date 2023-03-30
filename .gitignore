@@ -1,0 +1,10 @@
+.cache/
+.sel4_cache/
+/build/
+/backup/
+!/backup/firmware/
+/kernel/
+/projects/
+/tools/
+compile_commands.json
+.fetch-log
