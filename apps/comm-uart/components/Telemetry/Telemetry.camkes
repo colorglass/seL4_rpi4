@@ -4,7 +4,8 @@ component Telemetry {
     include <top_types.h>;
     control;
 
-    has mutex telemetry;
+    has mutex telemetry_send;
+    has mutex telemetry_recv;
 
     dataport Buf(4096) gpiohw_mem;
 

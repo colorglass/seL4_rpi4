@@ -3,7 +3,8 @@ component Encrypt {
     include <top_types.h>;
     control;
 
-    has mutex encrypt;
+    has mutex encrypt_send;
+    has mutex encrypt_recv;
 
     emits Encrypt2Telemetry_DataReadyEvent emit_Encrypt2Telemetry_DataReadyEvent;
     consumes Encrypt2Telemetry_DataReadyAck consume_Encrypt2Telemetry_DataReadyAck;

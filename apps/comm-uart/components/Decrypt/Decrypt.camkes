@@ -3,7 +3,8 @@ component Decrypt {
     include <top_types.h>;
     control;
 
-    has mutex decrypt;
+    has mutex decrypt_send;
+    has mutex decrypt_recv;
 
     consumes Telemetry2Decrypt_DataReadyEvent consume_Telemetry2Decrypt_DataReadyEvent;
     emits Telemetry2Decrypt_DataReadyAck emit_Telemetry2Decrypt_DataReadyAck;

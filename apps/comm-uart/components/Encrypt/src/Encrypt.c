@@ -8,16 +8,30 @@
 
 #include <top_types.h>
 
-#define lock() \
+#define send_lock() \
     do { \
-        if (encrypt_lock()) { \
+        if (encrypt_send_lock()) { \
             LOG_ERROR("[%s] failed to lock\n", get_instance_name()); \
         } \
     } while (0)
 
-#define unlock() \
+#define send_unlock() \
     do { \
-        if (encrypt_unlock()) { \
+        if (encrypt_send_unlock()) { \
+            LOG_ERROR("[%s] failed to unlock\n", get_instance_name()); \
+        } \
+    } while (0)
+
+#define recv_lock() \
+    do { \
+        if (encrypt_recv_lock()) { \
+            LOG_ERROR("[%s] failed to lock\n", get_instance_name()); \
+        } \
+    } while (0)
+
+#define recv_unlock() \
+    do { \
+        if (encrypt_recv_unlock()) { \
             LOG_ERROR("[%s] failed to unlock\n", get_instance_name()); \
         } \
     } while (0)
@@ -44,7 +58,8 @@ void pre_init() {
 // TODO: Implement actual encryption
 static void Encrypt_FC_Data_to_Telem_Data() {
     // Protect both recv_queue and send_queue
-    lock();
+    send_lock();
+    recv_lock();
 
     if (recv_queue.size + send_queue.size > MAX_QUEUE_SIZE) {
         LOG_ERROR("Send queue not enough!");
@@ -61,7 +76,8 @@ static void Encrypt_FC_Data_to_Telem_Data() {
         }
     }
 
-    unlock();
+    recv_unlock();
+    send_lock();
 }
 
 // Send encrypted Telem data to Telemetry
@@ -77,16 +93,16 @@ static int send_to_telemetry(void) {
     // because xxxAck_callback is invoked
     // once for each ACK
     while (1) {
-        lock();
+        send_lock();
         queue_size = send_queue.size;
-        unlock();
+        send_unlock();
         if (queue_size > 0) {
             break;
         }
     }
 
     // Protect send_queue
-    lock();    
+    send_lock();
 
     data_size = send_queue.size;
     if (data_size > sizeof(Telem_Data_raw)) {
@@ -108,7 +124,7 @@ static int send_to_telemetry(void) {
     }
     telem_data->len = data_size;
 
-    unlock();
+    send_unlock();
 
     // LOG_ERROR("To telemetry");
     // Encrypt => Telemetry
@@ -123,7 +139,7 @@ static int read_from_uart(void) {
     int error = 0;
 
     // Protect recv_queue
-    lock();
+    recv_lock();
 
     FC_Data *fc_data = (FC_Data *) recv_FC_Data_UART2Encrypt;
     uint32_t size = fc_data->len;
@@ -139,7 +155,7 @@ static int read_from_uart(void) {
         recv_FC_Data_UART2Encrypt_acquire();
     }
 
-    unlock();
+    recv_unlock();
 
     // Tell UART that data has been accepted
     emit_UART2Encrypt_DataReadyAck_emit();

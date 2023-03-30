@@ -8,16 +8,30 @@
 
 #include <top_types.h>
 
-#define lock() \
+#define send_lock() \
     do { \
-        if (decrypt_lock()) { \
+        if (decrypt_send_lock()) { \
             LOG_ERROR("[%s] failed to lock\n", get_instance_name()); \
         } \
     } while (0)
 
-#define unlock() \
+#define send_unlock() \
     do { \
-        if (decrypt_unlock()) { \
+        if (decrypt_send_unlock()) { \
+            LOG_ERROR("[%s] failed to unlock\n", get_instance_name()); \
+        } \
+    } while (0)
+
+#define recv_lock() \
+    do { \
+        if (decrypt_recv_lock()) { \
+            LOG_ERROR("[%s] failed to lock\n", get_instance_name()); \
+        } \
+    } while (0)
+
+#define recv_unlock() \
+    do { \
+        if (decrypt_recv_unlock()) { \
             LOG_ERROR("[%s] failed to unlock\n", get_instance_name()); \
         } \
     } while (0)
@@ -45,7 +59,8 @@ void pre_init() {
 static int Decrypt_Telem_Data_to_FC_Data() {
     int error = 0;
 
-    lock();
+    send_lock();
+    recv_lock();
 
     if (recv_queue.size + send_queue.size > MAX_QUEUE_SIZE) {
         LOG_ERROR("Send queue not enough!");
@@ -64,7 +79,8 @@ static int Decrypt_Telem_Data_to_FC_Data() {
         }
     }
 
-    unlock();
+    recv_unlock();
+    send_unlock();
 
     return error;
 }
@@ -76,16 +92,16 @@ static int send_to_uart(void) {
 
     uint32_t queue_size;
     while (1) {
-        lock();
+        send_lock();
         queue_size = send_queue.size;
-        unlock();
+        send_unlock();
         if (queue_size > 0) {
             break;
         }
     }
 
     // Protect send_queue
-    lock();
+    send_lock();
 
     FC_Data *fc_data = (FC_Data *) send_FC_Data_Decrypt2UART;
     uint32_t data_size = send_queue.size;
@@ -109,7 +125,7 @@ static int send_to_uart(void) {
     }
     fc_data->len = data_size;
 
-    unlock();
+    send_unlock();
 
     // LOG_ERROR("To uart");
     // Decrypt => UART
@@ -124,7 +140,7 @@ static int read_from_telemetry(void) {
     int error = 0;
     
     // Protect recv_queue
-    lock();
+    recv_lock();
 
     Telem_Data *telem_data = (Telem_Data *) recv_Telem_Data_Telemetry2Decrypt;
     uint32_t size = telem_data->len;
@@ -138,7 +154,7 @@ static int read_from_telemetry(void) {
         recv_Telem_Data_Telemetry2Decrypt_acquire();
     }
 
-    unlock();
+    recv_unlock();
 
     // Tell Telemetry that data has been accepted
     emit_Telemetry2Decrypt_DataReadyAck_emit();

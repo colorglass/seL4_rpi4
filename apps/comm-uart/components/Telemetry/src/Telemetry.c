@@ -10,16 +10,30 @@
 
 #include <top_types.h>
 
-#define lock() \
+#define send_lock() \
     do { \
-        if (telemetry_lock()) { \
+        if (telemetry_send_lock()) { \
             printf("[%s] failed to lock: %d\n", get_instance_name(), __LINE__); \
         } \
     } while (0)
 
-#define unlock() \
+#define send_unlock() \
     do { \
-        if (telemetry_unlock()) { \
+        if (telemetry_send_unlock()) { \
+            printf("[%s] failed to unlock: %d\n", get_instance_name(), __LINE__); \
+        } \
+    } while (0)
+
+#define recv_lock() \
+    do { \
+        if (telemetry_recv_lock()) { \
+            printf("[%s] failed to lock: %d\n", get_instance_name(), __LINE__); \
+        } \
+    } while (0)
+
+#define recv_unlock() \
+    do { \
+        if (telemetry_recv_unlock()) { \
             printf("[%s] failed to unlock: %d\n", get_instance_name(), __LINE__); \
         } \
     } while (0)
@@ -59,11 +73,11 @@ static int telemetry_rx_poll() {
         return -1;
     }
     // Poll could happen when dequeueing
-    lock();
+    recv_lock();
     if (enqueue(&recv_queue, c)) {
         LOG_ERROR("Receive queue full!");
     }
-    unlock();
+    recv_unlock();
 
     // LOG_ERROR("RX: %c", c);
 
@@ -72,7 +86,7 @@ static int telemetry_rx_poll() {
 
 static int telemetry_tx_poll() {
     int error = 0;
-    lock();
+    send_lock();
 
     int size = send_queue.size;
     uint8_t c;
@@ -91,7 +105,7 @@ static int telemetry_tx_poll() {
         }
     }
 
-    unlock();
+    send_unlock();
 
     return error;
 }
@@ -106,15 +120,15 @@ static int send_to_decrypt(void) {
 
     // Wait for RX to push some data into recv_queue
     while (1) {
-        lock();
+        recv_lock();
         queue_size = recv_queue.size;
-        unlock();
+        recv_unlock();
         if (queue_size > 0) {
             break;
         }
     }
 
-    lock();
+    recv_lock();
     if (recv_queue.size > sizeof(Telem_Data_raw)) {
         data_size = sizeof(Telem_Data_raw);
     } else {
@@ -134,7 +148,7 @@ static int send_to_decrypt(void) {
         }
     }
     telem_data->len = data_size;
-    unlock();
+    recv_unlock();
 
     // LOG_ERROR("To decrypt");
     // Telemetry => Decrypt
@@ -168,7 +182,7 @@ static int read_from_encrypt(void) {
 
     Telem_Data *telem_data = (Telem_Data *) recv_Telem_Data_Encrypt2Telemetry;
     
-    lock();
+    send_lock();
 
     if (telem_data->len + send_queue.size > MAX_QUEUE_SIZE) {
         LOG_ERROR("Send queue not enough!");
@@ -187,7 +201,7 @@ static int read_from_encrypt(void) {
         recv_Telem_Data_Encrypt2Telemetry_acquire();
     }
 
-    unlock();
+    send_unlock();
 
     // Tell Encrypt that data has been accepted
     emit_Encrypt2Telemetry_DataReadyAck_emit();
