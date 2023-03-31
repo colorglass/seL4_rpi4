@@ -1,0 +1,13 @@
+arm_64bit=1
+kernel=u-boot.bin
+dtoverlay=disable-bt
+dtoverlay=uart0
+dtoverlay=uart1
+dtoverlay=uart2
+dtoverlay=uart3
+dtoverlat=uart4
+dtoverlay=uart5
+#init_uart_baud=57600
+enable_uart=1
+#dtparam=spi=on
+
