@@ -1,3 +1,4 @@
+#include "camkes-component-uart.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,6 +66,11 @@ void pre_init() {
 
     queue_init(&recv_queue);
     queue_init(&send_queue);
+
+    FC_Data *fc_data = (FC_Data *) send_FC_Data_UART2Encrypt;
+    fc_data->len = 0;
+    send_FC_Data_UART2Encrypt_release();
+    memset(fc_data->raw_data, -1, sizeof(fc_data->raw_data));
 
     LOG_ERROR("Out pre_init");
 }

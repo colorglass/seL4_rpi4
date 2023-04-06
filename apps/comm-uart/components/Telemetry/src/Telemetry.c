@@ -64,6 +64,12 @@ void pre_init() {
 
     queue_init(&recv_queue);
     queue_init(&send_queue);
+
+    Telem_Data *telem_data = (Telem_Data *) send_Telem_Data_Telemetry2Decrypt;
+    telem_data->len = 0;
+    send_Telem_Data_Telemetry2Decrypt_release();
+    memset(telem_data->raw_data, -1, sizeof(telem_data->raw_data));
+
     LOG_ERROR("Out pre_init");
 }
 

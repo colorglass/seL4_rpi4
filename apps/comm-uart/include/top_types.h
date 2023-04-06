@@ -5,13 +5,15 @@
 #include <string.h>
 #include <utils/util.h>
 
-typedef uint8_t FC_Data_raw [508];
+#include "mavlink/v2.0/mavlink_types.h"
+
+typedef uint8_t FC_Data_raw [8];
 typedef struct FC_Data {
     FC_Data_raw raw_data;
     uint32_t len;
 } FC_Data;
 
-typedef uint8_t Telem_Data_raw [508];
+typedef uint8_t Telem_Data_raw [8];
 typedef struct Telem_Data {
     Telem_Data_raw raw_data;
     uint32_t len;
@@ -24,6 +26,17 @@ typedef struct Telem_Data {
         ps_cdev_putchar(serial, __str[i]); \
     } \
 } while (0)
+
+
+/**
+ * MAVLink message
+ */
+
+typedef struct MAVLink_Message {
+    mavlink_message_t msg;
+    uint8_t is_msg;
+} MAVLink_Message_t;
+
 
 /*
  * Queue
