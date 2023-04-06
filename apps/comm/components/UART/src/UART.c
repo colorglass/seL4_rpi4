@@ -81,9 +81,10 @@ static void serial_irq_handle(void *data, ps_irq_acknowledge_fn_t acknowledge_fn
     if (serial) {
         int c = 0;
         ps_cdev_handle_irq(serial, 0);
-        while (c != EOF) {
+        // while (c != EOF) {
             c = ps_cdev_getchar(serial);
             if (c != EOF) {
+                // LOG_ERROR("\nCHAR: %02X\n", c);
                 mavlink_status_t status;
                 int result;
 
@@ -100,7 +101,7 @@ static void serial_irq_handle(void *data, ps_irq_acknowledge_fn_t acknowledge_fn
                     getchar_io(msg);
                 }
             }
-        }
+        // }
     }
 
     error = acknowledge_fn(ack_data);
