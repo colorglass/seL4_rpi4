@@ -12,31 +12,31 @@
 
 #include <top_types.h>
 
-#define send_lock() \
+#define send_wait() \
     do { \
-        if (uart_send_lock()) { \
+        if (uart_send_wait()) { \
             LOG_ERROR("[%s] failed to lock\n", get_instance_name()); \
         } \
     } while (0)
 
-#define send_unlock() \
+#define send_post() \
     do { \
-        if (uart_send_unlock()) { \
-            LOG_ERROR("[%s] failed to unlock\n", get_instance_name()); \
+        if (uart_send_post()) { \
+            LOG_ERROR("[%s] failed to post\n", get_instance_name()); \
         } \
     } while (0)
 
-#define recv_lock() \
+#define recv_wait() \
     do { \
-        if (uart_recv_lock()) { \
+        if (uart_recv_wait()) { \
             LOG_ERROR("[%s] failed to lock\n", get_instance_name()); \
         } \
     } while (0)
 
-#define recv_unlock() \
+#define recv_post() \
     do { \
-        if (uart_recv_unlock()) { \
-            LOG_ERROR("[%s] failed to unlock\n", get_instance_name()); \
+        if (uart_recv_post()) { \
+            LOG_ERROR("[%s] failed to post\n", get_instance_name()); \
         } \
     } while (0)
 
@@ -72,6 +72,9 @@ void pre_init() {
     send_FC_Data_UART2Encrypt_release();
     memset(fc_data->raw_data, -1, sizeof(fc_data->raw_data));
 
+    recv_post();
+    send_post();
+
     LOG_ERROR("Out pre_init");
 }
 
@@ -85,15 +88,12 @@ static int send_to_encrypt(void) {
 
     // Wait until recv_queue is not empty
     while (1) {
-        recv_lock();
-        queue_size = recv_queue.size;
-        recv_unlock();
-        if (queue_size > 0) {
+        if (recv_queue.size > 0) {
             break;
         }
     }
 
-    recv_lock();
+    recv_wait();
 
     data_size = recv_queue.size;
     if (data_size > sizeof(FC_Data_raw)) {
@@ -114,7 +114,7 @@ static int send_to_encrypt(void) {
     }
     fc_data->len = data_size;
 
-    recv_unlock();
+    recv_post();
 
     // LOG_ERROR("To encrypt");
     // Tell Encrypt that data is ready
@@ -130,26 +130,23 @@ static int read_from_decrypt(void) {
 
     FC_Data *fc_data = (FC_Data *) recv_FC_Data_Decrypt2UART;
 
-    send_lock();
+    send_wait();
 
     uint32_t data_len = fc_data->len;
-    recv_FC_Data_Decrypt2UART_acquire();
     if (data_len + send_queue.size > MAX_QUEUE_SIZE) {
         LOG_ERROR("Receivce queue not enough!");
     }
-    recv_FC_Data_Decrypt2UART_acquire();
 
     for (uint32_t i = 0; i < data_len; i++) {
+        recv_FC_Data_Decrypt2UART_acquire();
         if (enqueue(&send_queue, fc_data->raw_data[i])) {
             LOG_ERROR("Receive queue full!");
-            recv_FC_Data_Decrypt2UART_acquire();
             error = -1;
             break;
         }
-        recv_FC_Data_Decrypt2UART_acquire();
     }
 
-    send_unlock();
+    send_post();
 
     // Tell Decrypt that data has been accepted
     emit_Decrypt2UART_DataReadyAck_emit();
@@ -201,11 +198,11 @@ static int uart_rx_poll(void) {
         return -1;
     }
 
-    recv_lock();
+    recv_wait();
     if (enqueue(&recv_queue, c)) {
         LOG_ERROR("Receive queue full!");
     }
-    recv_unlock();
+    recv_post();
 
     // LOG_ERROR("RX: %c", c);
 
@@ -215,7 +212,7 @@ static int uart_rx_poll(void) {
 // Write to TX from send_queue
 static int uart_tx_poll(void) {
     int error = 0;
-    send_lock();
+    send_wait();
 
     // if (!queue_empty(&send_queue)) {
     //     print_queue(&send_queue);
@@ -233,7 +230,7 @@ static int uart_tx_poll(void) {
         }
     }
 
-    send_unlock();
+    send_post();
     return error;
 }
 

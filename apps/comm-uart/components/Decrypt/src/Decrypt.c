@@ -34,30 +34,30 @@ static uint8_t my_mavlink_parse_char(uint8_t c,
 }
 
 
-#define send_lock() \
+#define send_wait() \
     do { \
-        if (decrypt_send_lock()) { \
+        if (decrypt_send_wait()) { \
             LOG_ERROR("[%s] failed to lock\n", get_instance_name()); \
         } \
     } while (0)
 
-#define send_unlock() \
+#define send_post() \
     do { \
-        if (decrypt_send_unlock()) { \
+        if (decrypt_send_post()) { \
             LOG_ERROR("[%s] failed to unlock\n", get_instance_name()); \
         } \
     } while (0)
 
-#define recv_lock() \
+#define recv_wait() \
     do { \
-        if (decrypt_recv_lock()) { \
+        if (decrypt_recv_wait()) { \
             LOG_ERROR("[%s] failed to lock\n", get_instance_name()); \
         } \
     } while (0)
 
-#define recv_unlock() \
+#define recv_post() \
     do { \
-        if (decrypt_recv_unlock()) { \
+        if (decrypt_recv_post()) { \
             LOG_ERROR("[%s] failed to unlock\n", get_instance_name()); \
         } \
     } while (0)
@@ -85,6 +85,9 @@ void pre_init() {
     send_FC_Data_Decrypt2UART_release();
     memset(fc_data->raw_data, -1, sizeof(fc_data->raw_data));
 
+    decrypt_recv_post();
+    decrypt_send_post();
+
     LOG_ERROR("Out pre_init");
 }
 
@@ -96,24 +99,8 @@ static int Decrypt_Telem_Data_to_FC_Data() {
     int error = 0;
 
     if (recv_msg.is_msg) {
-        send_lock();
-        recv_lock();
-
-        // if (recv_queue.size + send_queue.size > MAX_QUEUE_SIZE) {
-        //     LOG_ERROR("Send queue not enough!");
-        // }
-
-        // for (uint32_t i=0; i < recv_queue.size; i++) {
-        //     uint8_t tmp;
-        //     if (dequeue(&recv_queue, &tmp)) {
-        //         error = -1;
-        //         break;
-        //     }
-        //     if (enqueue(&send_queue, tmp)) {
-        //         error = -1;
-        //         break;
-        //     }
-        // }
+        send_wait();
+        recv_wait();
 
         if (send_msg.is_msg) {
             LOG_ERROR("Overwrite send_msg");
@@ -123,8 +110,8 @@ static int Decrypt_Telem_Data_to_FC_Data() {
         recv_msg.is_msg = 0;
 
         // Must in reverse order
-        recv_unlock();
-        send_unlock();
+        recv_post();
+        send_post();
     }
 
     return error;
@@ -137,10 +124,6 @@ static int send_to_uart(void) {
 
     uint32_t queue_size;
     while (1) {
-        // queue_size = send_queue.size;
-        // if (queue_size > 0) {
-        //     break;
-        // }
         if (send_msg.is_msg) {
             break;
         }
@@ -149,28 +132,7 @@ static int send_to_uart(void) {
     FC_Data *fc_data = (FC_Data *) send_FC_Data_Decrypt2UART;
 
     // Protect send_queue
-    send_lock();
-
-    // uint32_t data_size = send_queue.size;
-
-    // if (data_size > sizeof(FC_Data_raw)) {
-    //     data_size = sizeof(FC_Data_raw);
-    // }
-
-    // uint8_t tmp;
-    // for (uint32_t i=0; i < data_size; i++) {
-    //     if (!dequeue(&send_queue, &tmp)) {
-    //         fc_data->raw_data[i] = tmp;
-    //         send_FC_Data_Decrypt2UART_release();
-    //     } else {
-    //         LOG_ERROR("Should not get here");
-    //         send_FC_Data_Decrypt2UART_release();
-    //         error = -1;
-    //         data_size = 0;
-    //         break;
-    //     }
-    // }
-    // fc_data->len = data_size;
+    send_wait();
 
     uint32_t len = mavlink_msg_to_send_buffer(fc_data->raw_data, &send_msg.msg);
     send_FC_Data_Decrypt2UART_release();
@@ -178,7 +140,9 @@ static int send_to_uart(void) {
 
     send_msg.is_msg = 0;
 
-    send_unlock();
+    LOG_ERROR("Decrypt sent data: [SEQ]: %d, [MSGID]: %d, [COMPID]: %d, [SYSID]: %d", send_msg.msg.seq, send_msg.msg.msgid, send_msg.msg.compid, send_msg.msg.sysid);
+
+    send_post();
 
     // LOG_ERROR("To uart");
     // Decrypt => UART
@@ -198,7 +162,7 @@ static int read_from_telemetry(void) {
     int result;
 
     // Protect recv_queue
-    recv_lock();
+    recv_wait();
 
     uint32_t size = telem_data->len;
     
@@ -211,14 +175,18 @@ static int read_from_telemetry(void) {
             LOG_ERROR("ERROR: Dropped %d packets", status.packet_rx_drop_count);
         }
 
-        if (!result) {
+        if (result) {
             LOG_ERROR("Decrypt received message: [SEQ]: %d, [MSGID]: %d, [SYSID]: %d, [COMPID]: %d", 
                 recv_msg.msg.seq, recv_msg.msg.msgid, recv_msg.msg.sysid, recv_msg.msg.compid);
             recv_msg.is_msg = 1;
         }
     }
 
-    recv_unlock();
+    recv_post();
+
+    if (result) {
+        Decrypt_Telem_Data_to_FC_Data();
+    }
 
     // Tell Telemetry that data has been accepted
     emit_Telemetry2Decrypt_DataReadyAck_emit();
@@ -267,7 +235,7 @@ int run(void) {
     emit_Telemetry2Decrypt_DataReadyAck_emit();
 
     while (1) {
-        Decrypt_Telem_Data_to_FC_Data();
+        // Decrypt_Telem_Data_to_FC_Data();
     }
 
     return 0;

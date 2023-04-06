@@ -1,0 +1,4 @@
+procedure uart {
+    include "mavlink/v2.0/mavlink_types.h";
+    void io(in mavlink_message_t m);
+}

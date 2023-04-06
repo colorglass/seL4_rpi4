@@ -11,31 +11,31 @@
 
 #include <top_types.h>
 
-#define send_lock() \
+#define send_wait() \
     do { \
-        if (telemetry_send_lock()) { \
+        if (telemetry_send_wait()) { \
             printf("[%s] failed to lock: %d\n", get_instance_name(), __LINE__); \
         } \
     } while (0)
 
-#define send_unlock() \
+#define send_post() \
     do { \
-        if (telemetry_send_unlock()) { \
-            printf("[%s] failed to unlock: %d\n", get_instance_name(), __LINE__); \
+        if (telemetry_send_post()) { \
+            printf("[%s] failed to post: %d\n", get_instance_name(), __LINE__); \
         } \
     } while (0)
 
-#define recv_lock() \
+#define recv_wait() \
     do { \
-        if (telemetry_recv_lock()) { \
+        if (telemetry_recv_wait()) { \
             printf("[%s] failed to lock: %d\n", get_instance_name(), __LINE__); \
         } \
     } while (0)
 
-#define recv_unlock() \
+#define recv_post() \
     do { \
-        if (telemetry_recv_unlock()) { \
-            printf("[%s] failed to unlock: %d\n", get_instance_name(), __LINE__); \
+        if (telemetry_recv_post()) { \
+            printf("[%s] failed to post: %d\n", get_instance_name(), __LINE__); \
         } \
     } while (0)
 
@@ -70,6 +70,9 @@ void pre_init() {
     send_Telem_Data_Telemetry2Decrypt_release();
     memset(telem_data->raw_data, -1, sizeof(telem_data->raw_data));
 
+    recv_post();
+    send_post();
+
     LOG_ERROR("Out pre_init");
 }
 
@@ -80,11 +83,11 @@ static int telemetry_rx_poll() {
         return -1;
     }
     // Poll could happen when dequeueing
-    recv_lock();
+    recv_wait();
     if (enqueue(&recv_queue, c)) {
         LOG_ERROR("Receive queue full!");
     }
-    recv_unlock();
+    recv_post();
 
     // LOG_ERROR("RX: %c", c);
 
@@ -93,7 +96,7 @@ static int telemetry_rx_poll() {
 
 static int telemetry_tx_poll() {
     int error = 0;
-    send_lock();
+    send_wait();
 
     uint32_t size = send_queue.size;
     uint8_t c;
@@ -112,7 +115,7 @@ static int telemetry_tx_poll() {
         }
     }
 
-    send_unlock();
+    send_post();
 
     return error;
 }
@@ -127,15 +130,15 @@ static int send_to_decrypt(void) {
 
     // Wait for RX to push some data into recv_queue
     while (1) {
-        recv_lock();
+        recv_wait();
         queue_size = recv_queue.size;
-        recv_unlock();
+        recv_post();
         if (queue_size > 0) {
             break;
         }
     }
 
-    recv_lock();
+    recv_wait();
     if (recv_queue.size > sizeof(Telem_Data_raw)) {
         data_size = sizeof(Telem_Data_raw);
     } else {
@@ -155,7 +158,7 @@ static int send_to_decrypt(void) {
         }
     }
     telem_data->len = data_size;
-    recv_unlock();
+    recv_post();
 
     // LOG_ERROR("To decrypt");
     // Telemetry => Decrypt
@@ -189,26 +192,23 @@ static int read_from_encrypt(void) {
 
     Telem_Data *telem_data = (Telem_Data *) recv_Telem_Data_Encrypt2Telemetry;
     
-    send_lock();
+    send_wait();
 
+    uint32_t data_len = telem_data->len;
     if (telem_data->len + send_queue.size > MAX_QUEUE_SIZE) {
         LOG_ERROR("Send queue not enough!");
     }
-    recv_Telem_Data_Encrypt2Telemetry_acquire();
 
-    uint32_t data_len = telem_data->len;
-    recv_Telem_Data_Encrypt2Telemetry_acquire();
     for (uint32_t i=0; i < data_len; i++) {
+        recv_Telem_Data_Encrypt2Telemetry_acquire();
         if (enqueue(&send_queue, telem_data->raw_data[i])) {
             LOG_ERROR("Send queue full!");
-            recv_Telem_Data_Encrypt2Telemetry_acquire();
             error = -1;
             break;
         }
-        recv_Telem_Data_Encrypt2Telemetry_acquire();
     }
 
-    send_unlock();
+    send_post();
 
     // Tell Encrypt that data has been accepted
     emit_Encrypt2Telemetry_DataReadyAck_emit();

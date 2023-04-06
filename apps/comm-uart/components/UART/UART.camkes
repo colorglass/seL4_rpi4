@@ -4,8 +4,8 @@ component UART {
     include <top_types.h>;
     control;
 
-    has mutex uart_send;
-    has mutex uart_recv;
+    has semaphore uart_send;
+    has semaphore uart_recv;
 
     dataport Buf(4096) gpiohw_mem;
 

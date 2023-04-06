@@ -1,3 +1,4 @@
+import "../../interfaces/uart.idl4";
 
 component Encrypt {
     include <top_types.h>;
@@ -9,9 +10,12 @@ component Encrypt {
     emits Encrypt2Telemetry_DataReadyEvent emit_Encrypt2Telemetry_DataReadyEvent;
     consumes Encrypt2Telemetry_DataReadyAck consume_Encrypt2Telemetry_DataReadyAck;
 
-    consumes UART2Encrypt_DataReadyEvent consume_UART2Encrypt_DataReadyEvent;
-    emits UART2Encrypt_DataReadyAck emit_UART2Encrypt_DataReadyAck;
+    // Get char from UART
+    provides uart getchar;
+
+    // consumes UART2Encrypt_DataReadyEvent consume_UART2Encrypt_DataReadyEvent;
+    // emits UART2Encrypt_DataReadyAck emit_UART2Encrypt_DataReadyAck;
 
     dataport Telem_Data send_Telem_Data_Encrypt2Telemetry;
-    dataport FC_Data recv_FC_Data_UART2Encrypt;
+    // dataport FC_Data recv_FC_Data_UART2Encrypt;
 }

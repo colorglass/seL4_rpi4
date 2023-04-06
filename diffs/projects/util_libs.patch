@@ -47,7 +47,16 @@ diff -Nur '--exclude=.git' '--exclude=.github' '--exclude=*.pyc' ../backup/proje
 +int bcm2711_spi_init(enum spi_id id, volatile void* base, mux_sys_t* mux_sys, clock_sys_t* clock_sys, spi_bus_t** ret_spi_bus);
 diff -Nur '--exclude=.git' '--exclude=.github' '--exclude=*.pyc' ../backup/projects/util_libs/libplatsupport/src/mach/bcm/pl011_uart.c util_libs/libplatsupport/src/mach/bcm/pl011_uart.c
 --- ../backup/projects/util_libs/libplatsupport/src/mach/bcm/pl011_uart.c	2023-03-23 09:06:19.023610040 +0800
-+++ util_libs/libplatsupport/src/mach/bcm/pl011_uart.c	2023-03-30 20:31:14.544725372 +0800
++++ util_libs/libplatsupport/src/mach/bcm/pl011_uart.c	2023-04-06 20:17:35.593897428 +0800
+@@ -128,7 +128,7 @@
+     uint32_t val = r->cr;
+ 
+     val |= CR_TXE; // Transmit enable
+-    val |= CR_RXE; // Teceive enable
++    val |= CR_RXE; // Receive enable
+ 
+     r->cr = val;
+ 
 @@ -158,7 +158,17 @@
  {
      // Base UART clock according to https://github.com/raspberrypi/firmware/issues/951

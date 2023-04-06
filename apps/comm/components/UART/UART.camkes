@@ -1,14 +1,40 @@
+import "../GPIO/GPIO.camkes";
+import "../../interfaces/uart.idl4";
 
 component UART {
     include <top_types.h>;
     control;
 
-    has mutex uart;
+    has semaphore uart_send;
+    has semaphore uart_recv;
 
-    // consumes Decrypt2UART_Started consume_Decrypt2UART_StartedEvent;
-    
-    emits UART2Decrypt_DataReadyEvent emit_UART2Decrypt_DataReadyEvent;
-    consumes UART2Decrypt_DataReadyAck consume_UART2Decrypt_DataReadyAck;
+    dataport Buf(4096) gpiohw_mem;
 
-    dataport UART_Data send_UART_Data_UART2Decrypt;
+    emits Dummy dummy_source;
+    consumes Dummy serial_dev;
+
+    consumes Decrypt2UART_DataReadyEvent consume_Decrypt2UART_DataReadyEvent;
+    emits Decrypt2UART_DataReadyAck emit_Decrypt2UART_DataReadyAck;
+
+    // emits UART2Encrypt_DataReadyEvent emit_UART2Encrypt_DataReadyEvent;
+    // consumes UART2Encrypt_DataReadyAck consume_UART2Encrypt_DataReadyAck;
+
+    uses uart getchar;
+
+    dataport FC_Data recv_FC_Data_Decrypt2UART;
+    // dataport FC_Data send_FC_Data_UART2Encrypt;
+
+    composition {
+        component GPIO gpio_hw;
+        connection seL4DTBHardware conn_serial5(from dummy_source, to serial_dev);
+        connection seL4HardwareMMIO gpio_mem_serial5(from gpiohw_mem, to gpio_hw.mem);
+    }
+
+    configuration {
+        serial_dev.dtb = dtb({ "aliases" : "serial5" });
+        serial_dev.generate_interrupts = 1;
+
+        gpio_hw.mem_paddr = 0xfe200000;
+        gpio_hw.mem_size = 4096;
+    }
 }

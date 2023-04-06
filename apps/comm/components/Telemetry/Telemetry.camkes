@@ -1,4 +1,5 @@
 import "../GPIO/GPIO.camkes";
+import "../../interfaces/uart.idl4";
 
 component Telemetry {
     include <top_types.h>;
@@ -12,13 +13,15 @@ component Telemetry {
     emits Dummy dummy_source;
     consumes Dummy serial_dev;
 
-    emits Telemetry2Decrypt_DataReadyEvent emit_Telemetry2Decrypt_DataReadyEvent;
-    consumes Telemetry2Decrypt_DataReadyAck consume_Telemetry2Decrypt_DataReadyAck;
+    // emits Telemetry2Decrypt_DataReadyEvent emit_Telemetry2Decrypt_DataReadyEvent;
+    // consumes Telemetry2Decrypt_DataReadyAck consume_Telemetry2Decrypt_DataReadyAck;
+
+    uses uart getchar;
 
     consumes Encrypt2Telemetry_DataReadyEvent consume_Encrypt2Telemetry_DataReadyEvent;
     emits Encrypt2Telemetry_DataReadyAck emit_Encrypt2Telemetry_DataReadyAck;
 
-    dataport Telem_Data send_Telem_Data_Telemetry2Decrypt;
+    // dataport Telem_Data send_Telem_Data_Telemetry2Decrypt;
     dataport Telem_Data recv_Telem_Data_Encrypt2Telemetry;
 
     composition {
@@ -29,6 +32,7 @@ component Telemetry {
 
     configuration {
         serial_dev.dtb = dtb({ "aliases" : "serial3" });
+        // serial_dev.generate_interrupts = 1;
 
         gpio_hw.mem_paddr = 0xfe200000;
         gpio_hw.mem_size = 4096;

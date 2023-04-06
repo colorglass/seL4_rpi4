@@ -7,13 +7,13 @@
 
 #include "mavlink/v2.0/mavlink_types.h"
 
-typedef uint8_t FC_Data_raw [8];
+typedef uint8_t FC_Data_raw [300];
 typedef struct FC_Data {
     FC_Data_raw raw_data;
     uint32_t len;
 } FC_Data;
 
-typedef uint8_t Telem_Data_raw [8];
+typedef uint8_t Telem_Data_raw [300];
 typedef struct Telem_Data {
     Telem_Data_raw raw_data;
     uint32_t len;

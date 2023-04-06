@@ -1,19 +1,21 @@
+import "../../interfaces/uart.idl4";
 
 component Decrypt {
     include <top_types.h>;
     control;
 
-    has mutex decrypt;
+    has semaphore decrypt_send;
+    has semaphore decrypt_recv;
 
-    // consumes Server2Decrypt_Started consume_Server2Decrypt_StartedEvent;
-    // emits Decrypt2UART_Started emit_Decrypt2UART_StartedEvent;
+    // consumes Telemetry2Decrypt_DataReadyEvent consume_Telemetry2Decrypt_DataReadyEvent;
+    // emits Telemetry2Decrypt_DataReadyAck emit_Telemetry2Decrypt_DataReadyAck;
 
-    emits Decrypt2Server_DataReadyEvent emit_Decrypt2Server_DataReadyEvent;
-    consumes Decrypt2Server_DataReadyAck consume_Decrypt2Server_DataReadyAck;
+    // Get char from Telemetry
+    provides uart getchar;
 
-    consumes UART2Decrypt_DataReadyEvent consume_UART2Decrypt_DataReadyEvent;
-    emits UART2Decrypt_DataReadyAck emit_UART2Decrypt_DataReadyAck;
+    emits Decrypt2UART_DataReadyEvent emit_Decrypt2UART_DataReadyEvent;
+    consumes Decrypt2UART_DataReadyAck consume_Decrypt2UART_DataReadyAck;
 
-    dataport FC_Data send_FC_Data_Decrypt2Server;
-    dataport UART_Data recv_UART_Data_UART2Decrypt;
+    // dataport Telem_Data recv_Telem_Data_Telemetry2Decrypt;
+    dataport FC_Data send_FC_Data_Decrypt2UART;    
 }

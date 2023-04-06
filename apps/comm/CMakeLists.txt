@@ -15,19 +15,21 @@ if("${GLOBAL_COMPONENTS_PATH}" STREQUAL "GLOBAL_COMPONENTS_PATH-NOTFOUND")
 endif()
 include(${GLOBAL_COMPONENTS_PATH})
 
-CAmkESAddImportPath(${CMAKE_CURRENT_LIST_DIR}/interfaces)
+# CAmkESAddImportPath(${CMAKE_CURRENT_LIST_DIR}/interfaces)
 
+# Telemetry
 file(
     GLOB
-        Server_deps
-        components/Server/src/*.c
+        Telemetry_deps
+        components/Telemetry/src/*.c
 )
 DeclareCAmkESComponent(
-    Server
+    Telemetry
     INCLUDES include
-    SOURCES ${Server_deps}
+    SOURCES ${Telemetry_deps}
 )
 
+# Decrypt
 file(
     GLOB
         Decrypt_deps
@@ -39,6 +41,19 @@ DeclareCAmkESComponent(
     SOURCES ${Decrypt_deps}
 )
 
+# Encrypt
+file(
+    GLOB
+        Encrypt_deps
+        components/Encrypt/src/*.c
+)
+DeclareCAmkESComponent(
+    Encrypt
+    INCLUDES include
+    SOURCES ${Encrypt_deps}
+)
+
+# UART
 file(
     GLOB
         UART_deps

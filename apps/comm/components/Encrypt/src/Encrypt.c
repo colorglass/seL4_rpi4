@@ -1,3 +1,4 @@
+#include "mavlink/v2.0/mavlink_types.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,28 +12,28 @@
 /**
  * MAVLink parsing
  */
-#include "camkes-component-encrypt.h"
 #include "mavlink/v2.0/common/mavlink.h"
-static mavlink_message_t g_mavlink_message_rx_buffer;
-static mavlink_status_t g_mavlink_status;
 
-static uint8_t my_mavlink_parse_char(uint8_t c,
-						   mavlink_message_t *r_message,
-						   mavlink_status_t *r_mavlink_status)
-{
-	uint8_t msg_received = mavlink_frame_char_buffer(&g_mavlink_message_rx_buffer,
-								&g_mavlink_status,
-								c,
-								r_message,
-								r_mavlink_status);
-	if (msg_received == MAVLINK_FRAMING_BAD_CRC) {
-		LOG_ERROR("MAVLink message parse error: Bad CRC");
-	} else if (msg_received == MAVLINK_FRAMING_BAD_SIGNATURE) {
-		LOG_ERROR("MAVLink message parse error: Bad signature");
-	}
+// static mavlink_message_t mavlink_message_rx_buffer;
+// static mavlink_status_t mavlink_status;
+
+// static uint8_t my_mavlink_parse_char(uint8_t c,
+// 						   mavlink_message_t *r_message,
+// 						   mavlink_status_t *r_mavlink_status)
+// {
+// 	uint8_t msg_received = mavlink_frame_char_buffer(&mavlink_message_rx_buffer,
+// 								&mavlink_status,
+// 								c,
+// 								r_message,
+// 								r_mavlink_status);
+// 	if (msg_received == MAVLINK_FRAMING_BAD_CRC) {
+// 		LOG_ERROR("MAVLink message parse error: Bad CRC");
+// 	} else if (msg_received == MAVLINK_FRAMING_BAD_SIGNATURE) {
+// 		LOG_ERROR("MAVLink message parse error: Bad signature");
+// 	}
 	
-	return msg_received;
-}
+// 	return msg_received;
+// }
 
 
 #define send_wait() \
@@ -81,13 +82,16 @@ void pre_init() {
     recv_msg.is_msg = 0;
     send_msg.is_msg = 0;
 
+    // memset(&mavlink_message_rx_buffer, 0, sizeof(mavlink_message_rx_buffer));
+    // memset(&mavlink_status, 0, sizeof(mavlink_status));
+
     Telem_Data *fc_data = (Telem_Data*) send_Telem_Data_Encrypt2Telemetry;
     send_Telem_Data_Encrypt2Telemetry_release();
     fc_data->len = 0;
     memset(fc_data->raw_data, -1, sizeof(fc_data->raw_data));
 
-    send_post();
     recv_post();
+    send_post();
 
     LOG_ERROR("Out pre_init");
 }
@@ -97,10 +101,11 @@ void pre_init() {
 // From recv_queue to send_queue.
 // TODO: Implement actual encryption
 static void Encrypt_FC_Data_to_Telem_Data() {
+    recv_wait();
     if (recv_msg.is_msg) {
+
         // Protect both recv_queue and send_queue
         send_wait();
-        recv_wait();
 
         if (send_msg.is_msg) {
             LOG_ERROR("Overwrite send_msg");
@@ -110,9 +115,9 @@ static void Encrypt_FC_Data_to_Telem_Data() {
         recv_msg.is_msg = 0;
 
         // Must in reverse order
-        recv_post();
         send_post();
     }
+    recv_post();
 }
 
 // Send encrypted Telem data to Telemetry
@@ -128,19 +133,17 @@ static int send_to_telemetry(void) {
     // because xxxAck_callback is invoked
     // once for each ACK
     while (1) {
-        // queue_size = send_queue.size;
-        // if (queue_size > 0) {
-        //     break;
-        // }
+        send_wait();
         if (send_msg.is_msg) {
             break;
         }
+        send_post();
     }
 
     Telem_Data *telem_data = (Telem_Data *) send_Telem_Data_Encrypt2Telemetry;
 
     // Protect send_queue
-    send_wait();
+    // send_wait();
 
     uint32_t len = mavlink_msg_to_send_buffer(telem_data->raw_data, &send_msg.msg);
     send_Telem_Data_Encrypt2Telemetry_release();
@@ -152,50 +155,8 @@ static int send_to_telemetry(void) {
 
     send_post();
 
-    // LOG_ERROR("To telemetry");
     // Encrypt => Telemetry
     emit_Encrypt2Telemetry_DataReadyEvent_emit();
-
-    return error;
-}
-
-// Read FC data from UART
-// and push to recv_queue
-static int read_from_uart(void) {
-    int error = 0;
-
-    // Protect recv_queue
-    recv_wait();
-
-    FC_Data *fc_data = (FC_Data *) recv_FC_Data_UART2Encrypt;
-    uint32_t size = fc_data->len;
-    mavlink_status_t status;
-    int result;
-
-    for (uint32_t i = 0; i < size; i++) {
-        recv_FC_Data_UART2Encrypt_acquire();
-
-        result = my_mavlink_parse_char(fc_data->raw_data[i], &recv_msg.msg, &status);
-
-        if (status.packet_rx_drop_count) {
-            LOG_ERROR("ERROR: Dropped %d packets", status.packet_rx_drop_count);
-        }
-        
-        if (result) {
-            LOG_ERROR("Encrypt received message: [SEQ]: %d, [MSGID]: %d, [SYSID]: %d, [COMPID]: %d", 
-                recv_msg.msg.seq, recv_msg.msg.msgid, recv_msg.msg.sysid, recv_msg.msg.compid);
-            recv_msg.is_msg = 1;
-        }
-    }
-
-    recv_post();
-
-    if (result) {
-        Encrypt_FC_Data_to_Telem_Data();
-    }
-
-    // Tell UART that data has been accepted
-    emit_UART2Encrypt_DataReadyAck_emit();
 
     return error;
 }
@@ -214,15 +175,15 @@ static void consume_Encrypt2Telemetry_DataReadyAck_callback(void *in_arg) {
 
 // Encrypt reads FC data from UART
 // when UART gives Encrypt a DataReady Event
-static void consume_UART2Encrypt_DataReadyEvent_callback(void *in_arg) {
-    if (read_from_uart()) {
-        LOG_ERROR("Error reading from uart");
-    }
+// static void consume_UART2Encrypt_DataReadyEvent_callback(void *in_arg) {
+//     if (read_from_uart()) {
+//         LOG_ERROR("Error reading from uart");
+//     }
     
-    if (consume_UART2Encrypt_DataReadyEvent_reg_callback(&consume_UART2Encrypt_DataReadyEvent_callback, NULL)) {
-        ZF_LOGF("Failed to register UART2Encrypt_DataReadyEvent callback");
-    }
-}
+//     if (consume_UART2Encrypt_DataReadyEvent_reg_callback(&consume_UART2Encrypt_DataReadyEvent_callback, NULL)) {
+//         ZF_LOGF("Failed to register UART2Encrypt_DataReadyEvent callback");
+//     }
+// }
 
 void consume_Encrypt2Telemetry_DataReadyAck__init(void) {
     if (consume_Encrypt2Telemetry_DataReadyAck_reg_callback(&consume_Encrypt2Telemetry_DataReadyAck_callback, NULL)) {
@@ -230,16 +191,31 @@ void consume_Encrypt2Telemetry_DataReadyAck__init(void) {
     }
 }
 
-void consume_UART2Encrypt_DataReadyEvent__init(void) {
-    if (consume_UART2Encrypt_DataReadyEvent_reg_callback(&consume_UART2Encrypt_DataReadyEvent_callback, NULL)) {
-        ZF_LOGF("Failed to register UART2Encrypt_DataReadyEvent callback");
-    }
+// void consume_UART2Encrypt_DataReadyEvent__init(void) {
+//     if (consume_UART2Encrypt_DataReadyEvent_reg_callback(&consume_UART2Encrypt_DataReadyEvent_callback, NULL)) {
+//         ZF_LOGF("Failed to register UART2Encrypt_DataReadyEvent callback");
+//     }
+// }
+
+void getchar__init() {
+
+}
+
+void getchar_io(mavlink_message_t m) {
+    recv_wait();
+
+    recv_msg.msg = m;
+    recv_msg.is_msg = 1;
+    
+    recv_post();
+
+    Encrypt_FC_Data_to_Telem_Data();
 }
 
 int run() {
     LOG_ERROR("In run");
 
-    emit_UART2Encrypt_DataReadyAck_emit();
+    // emit_UART2Encrypt_DataReadyAck_emit();
 
     while (1) {
         // Encrypt_FC_Data_to_Telem_Data();
