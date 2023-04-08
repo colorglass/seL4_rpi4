@@ -101,13 +101,16 @@ void pre_init() {
     // rb->tail = 0;
     // rb_release();
 
-    // if (camkes_dma_init(my_dma_pool, 4096, 4096, 0)) {
-    //     ZF_LOGF("DMA init failed");
-    // }
-    // void *dma_ptr = camkes_dma_alloc(0x90, 0, 0);
-    // if (!dma_ptr) {
-    //     ZF_LOGF("DMA alloc failed");
-    // }
+    if (camkes_dma_init(my_dma_pool, 4096, 4096, 0)) {
+        ZF_LOGF("DMA init failed");
+    }
+    void *dma_ptr = camkes_dma_alloc(0x90, 0, 0);
+    if (!dma_ptr) {
+        ZF_LOGF("DMA alloc failed");
+    }
+    for (int i=0; i<0x90; i++) {
+        LOG_ERROR("%02X", ((char*)dma_ptr)[i]);
+    }
 }
 
 typedef volatile struct pl011_regs_s {
@@ -138,7 +141,7 @@ static inline pl011_regs_t *pl011_uart_get_priv(ps_chardevice_t *dev)
 int run(void) {
     ZF_LOGE("In run");
 
-    pl011_regs_t *r = pl011_uart_get_priv(serial);
+    // pl011_regs_t *r = pl011_uart_get_priv(serial);
     while (1) {
         // int c = EOF;
         // while ((c = ps_cdev_getchar(serial)) == EOF) {
@@ -150,16 +153,16 @@ int run(void) {
     //     // }
         int ch = EOF;
 
-        while (!(r->fr & BIT(4))) {
-            ch = (int)(r->dr);
+        // while (!(r->fr & BIT(4))) {
+        //     ch = (int)(r->dr);
 
-            if (ch & 0xff00) {
-                LOG_ERROR("ERROR: %04X", ch);
-            }
+        //     if (ch & 0xff00) {
+        //         LOG_ERROR("ERROR: %04X", ch);
+        //     }
 
-            ch &= MASK(8);
-            handle_char(ch);
-        }
+        //     ch &= MASK(8);
+        //     handle_char(ch);
+        // }
     }
     return 0;
 }
