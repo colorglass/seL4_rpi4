@@ -15,5 +15,15 @@ assembly {
     composition {
         component Echo echo;
         component Echo2 echo2;
+
+        connection seL4SharedData conn (from echo2.rb, to echo.rb);
+    }
+
+    configuration {
+        echo.priority = 255;
+        echo2.priority = 255;
+
+        echo.rb_access = "RW";
+        echo2.rb_access = "RW";
     }
 }

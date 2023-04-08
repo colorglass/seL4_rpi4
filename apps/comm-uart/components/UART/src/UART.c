@@ -192,19 +192,28 @@ void consume_UART2Encrypt_DataReadyAck__init(void) {
 
 // Read from RX and push to recv_queue
 static int uart_rx_poll(void) {
-    int c = EOF;
-    c = ps_cdev_getchar(serial);
-    if (c == EOF) {
-        return -1;
-    }
+    // int c = EOF;
+    // c = ps_cdev_getchar(serial);
+    // if (c == EOF) {
+    //     return -1;
+    // }
 
+    // recv_wait();
+    // if (enqueue(&recv_queue, c)) {
+    //     LOG_ERROR("Receive queue full!");
+    // }
+    // recv_post();
+
+    uint8_t buf[32];
+    uint32_t len = ps_cdev_read(serial, buf, sizeof(buf), NULL, NULL);
     recv_wait();
-    if (enqueue(&recv_queue, c)) {
-        LOG_ERROR("Receive queue full!");
+    for (uint32_t i = 0; i < len; i++) {
+        if (enqueue(&recv_queue, buf[i])) {
+            LOG_ERROR("Receive queue full!");
+            break;
+        }
     }
     recv_post();
-
-    // LOG_ERROR("RX: %c", c);
 
     return 0;
 }

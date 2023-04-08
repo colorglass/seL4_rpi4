@@ -119,14 +119,14 @@ void pre_init() {
     serial = ps_cdev_init(BCM2xxx_UART5, &io_ops, &serial_device);
     ZF_LOGF_IF(!serial, "Failed to initialise char device");
 
-    ps_irq_t irq_info = {
-        .type = PS_INTERRUPT,
-        .irq = {
-            .number = UART5_IRQ,
-        }
-    };
-    irq_id_t serial_irq_id = ps_irq_register(&io_ops.irq_ops, irq_info, serial_irq_handle, NULL);
-    ZF_LOGF_IF(serial_irq_id < 0, "Failed to register irq");
+    // ps_irq_t irq_info = {
+    //     .type = PS_INTERRUPT,
+    //     .irq = {
+    //         .number = UART5_IRQ,
+    //     }
+    // };
+    // irq_id_t serial_irq_id = ps_irq_register(&io_ops.irq_ops, irq_info, serial_irq_handle, NULL);
+    // ZF_LOGF_IF(serial_irq_id < 0, "Failed to register irq");
 
     queue_init(&recv_queue);
     queue_init(&send_queue);
@@ -305,7 +305,7 @@ int run(void) {
     emit_Decrypt2UART_DataReadyAck_emit();
 
     while (1) {
-        // uart_rx_poll();
+        uart_rx_poll();
         uart_tx_poll();
     }
     

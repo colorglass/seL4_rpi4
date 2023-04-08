@@ -101,8 +101,8 @@ if("${GLOBAL_COMPONENTS_PATH}" STREQUAL "GLOBAL_COMPONENTS_PATH-NOTFOUND")
 endif()
 include(${GLOBAL_COMPONENTS_PATH})
 
-DeclareCAmkESComponent(Echo SOURCES components/Echo/src/echo.c)
-DeclareCAmkESComponent(Echo2 SOURCES components/Echo2/src/echo.c)
+DeclareCAmkESComponent(Echo INCLUDES include SOURCES components/Echo/src/echo.c)
+DeclareCAmkESComponent(Echo2 INCLUDES include SOURCES components/Echo2/src/echo2.c)
 
 DeclareCAmkESRootserver(uart.camkes)
 GenerateCAmkESRootserver()

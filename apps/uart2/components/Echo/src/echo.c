@@ -3,16 +3,18 @@
 #include <platsupport/chardev.h>
 #include <stdint.h>
 
+#include "my_type.h"
+
 static ps_io_ops_t io_ops;
 static ps_chardevice_t serial_device;
 static ps_chardevice_t *serial = NULL;
 
 static void handle_char(uint8_t c) {
-    ZF_LOGE("In handle_char %c", c);
-    ps_cdev_putchar(serial, '0');
-    ps_cdev_putchar(serial, ':');
-    ps_cdev_putchar(serial, c);
-    ps_cdev_putchar(serial, '\n');
+    // ZF_LOGE("%02X", c);
+    // ps_cdev_putchar(serial, '0');
+    // ps_cdev_putchar(serial, ':');
+    // ps_cdev_putchar(serial, c);
+    // ps_cdev_putchar(serial, '\n');
 }
 
 void serial_irq_handle(void *data, ps_irq_acknowledge_fn_t acknowledge_fn, void *ack_data) {
@@ -39,7 +41,7 @@ void pre_init() {
     error = camkes_io_ops(&io_ops);
     ZF_LOGF_IF(error, "Failed to initialise IO ops");
 
-    serial = ps_cdev_init(BCM2xxx_UART3, &io_ops, &serial_device);
+    serial = ps_cdev_init(BCM2xxx_UART5, &io_ops, &serial_device);
     if (serial == NULL) {
         ZF_LOGE("Failed to initialise char device");
     } else {
@@ -60,12 +62,24 @@ int run(void) {
     ZF_LOGE("In run");
 
     while (1) {
-        int c = EOF;
-        while ((c = ps_cdev_getchar(serial)) == EOF) {
+        // int c = EOF;
+        // while ((c = ps_cdev_getchar(serial)) == EOF) {
 
-        }
-        ps_cdev_putchar(serial, c);
-        ps_cdev_putchar(serial, '\n');
+        // }
+        // ps_cdev_putchar(serial, c);
+        // ps_cdev_putchar(serial, '\n');
+        // ring_buffer_t *ringbuffer = (ring_buffer_t *) rb;
+        // uint8_t head, tail;
+        // head = ringbuffer->head;
+        // rb_acquire();
+        // tail = ringbuffer->tail;
+        // rb_acquire();
+        // if (head != tail) {
+        //     handle_char(ringbuffer->buffer[head++]);
+        //     rb_acquire();
+        //     ringbuffer->head = head;
+        //     rb_release();
+        // }
     }
     return 0;
 }

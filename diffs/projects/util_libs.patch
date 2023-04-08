@@ -47,8 +47,28 @@ diff -Nur '--exclude=.git' '--exclude=.github' '--exclude=*.pyc' ../backup/proje
 +int bcm2711_spi_init(enum spi_id id, volatile void* base, mux_sys_t* mux_sys, clock_sys_t* clock_sys, spi_bus_t** ret_spi_bus);
 diff -Nur '--exclude=.git' '--exclude=.github' '--exclude=*.pyc' ../backup/projects/util_libs/libplatsupport/src/mach/bcm/pl011_uart.c util_libs/libplatsupport/src/mach/bcm/pl011_uart.c
 --- ../backup/projects/util_libs/libplatsupport/src/mach/bcm/pl011_uart.c	2023-03-23 09:06:19.023610040 +0800
-+++ util_libs/libplatsupport/src/mach/bcm/pl011_uart.c	2023-04-06 20:17:35.593897428 +0800
-@@ -128,7 +128,7 @@
++++ util_libs/libplatsupport/src/mach/bcm/pl011_uart.c	2023-04-08 15:50:04.955553474 +0800
+@@ -58,6 +58,10 @@
+ #define FR_RXFE         BIT(4) // Receive FIFO empty
+ #define FR_BUSY         BIT(3) // UART busy
+ 
++/* IFLS register */
++#define IFLS_RXIFLSEL   0x34   // Receive interrupt FIFO level select.
++                                    // 0: 1/8 full
++
+ /* IMSC register */
+ #define IMSC_RXIM       BIT(4)
+ #define IMSC_TXIM       BIT(5)
+@@ -66,6 +70,8 @@
+ #define ICR_RXIC        BIT(4)
+ #define ICR_TXIC        BIT(5)
+ 
++/* DMACR register */
++#define DMACR_RXDMAE    BIT(0)
+ 
+ static inline pl011_regs_t *pl011_uart_get_priv(ps_chardevice_t *dev)
+ {
+@@ -128,7 +134,7 @@
      uint32_t val = r->cr;
  
      val |= CR_TXE; // Transmit enable
@@ -57,7 +77,7 @@ diff -Nur '--exclude=.git' '--exclude=.github' '--exclude=*.pyc' ../backup/proje
  
      r->cr = val;
  
-@@ -158,7 +158,17 @@
+@@ -158,7 +164,20 @@
  {
      // Base UART clock according to https://github.com/raspberrypi/firmware/issues/951
      const uint32_t freq_uart_clk = 48000000;
@@ -69,6 +89,9 @@ diff -Nur '--exclude=.git' '--exclude=.github' '--exclude=*.pyc' ../backup/proje
 +    case BCM2xxx_UART5: // Pixhawk
 +        baud_rate = 57600;
 +        break;
++    // case BCM2xxx_UART5:
++    //     baud_rate = 1200;
++    //     break;
 +    default:
 +        baud_rate = 115200;
 +        break;
@@ -76,17 +99,30 @@ diff -Nur '--exclude=.git' '--exclude=.github' '--exclude=*.pyc' ../backup/proje
  
      double baud_div = (double) freq_uart_clk / (double)(16.0 * baud_rate);
      double frac_div = baud_div - (uint32_t) baud_div;
-@@ -227,7 +237,8 @@
+@@ -193,7 +212,7 @@
+     pl011_uart_disable(dev);
+ 
+     // Disable RX/all interrupts
+-    //pl011_uart_disable_rx_irq(dev);
++    // pl011_uart_disable_rx_irq(dev);
+     r->imsc = 0x7f1;
+ 
+     // Wait till UART is not busy anymore
+@@ -227,7 +246,12 @@
       *
       */
      // Enable FIFO
 -    //pl011_uart_enable_fifo(dev);
-+    // colored-dye (2023/03/22): enable FIFO for UART5.
++    // colored-dye (2023/03/22): enable FIFO.
 +    pl011_uart_enable_fifo(dev);
++
++    // IFLS
++    // r->ifls &= ~IFLS_RXIFLSEL;
++    r->dmacr |= DMACR_RXDMAE;
  
      // Enable UART
      pl011_uart_enable(dev);
-@@ -300,7 +311,7 @@
+@@ -300,7 +324,7 @@
      dev->handle_irq = &pl011_uart_handle_irq;
      dev->irqs       = defn->irqs;
      dev->ioops      = *ops;
@@ -95,7 +131,7 @@ diff -Nur '--exclude=.git' '--exclude=.github' '--exclude=*.pyc' ../backup/proje
  
      pl011_uart_configure(dev);
  
-@@ -322,9 +333,9 @@
+@@ -322,9 +346,9 @@
  
  int pl011_uart_putchar(ps_chardevice_t *d, int c)
  {
