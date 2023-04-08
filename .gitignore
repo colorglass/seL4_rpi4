@@ -4,8 +4,8 @@ mavlink/v2.0/
 /build/
 /backup/*
 !/backup/firmware/
-/kernel/
-/projects/
+# /kernel/
+/projects/*
 /tools/
 compile_commands.json
 .fetch-log

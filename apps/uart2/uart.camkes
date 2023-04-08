@@ -20,7 +20,7 @@ assembly {
     }
 
     configuration {
-        echo.priority = 255;
+        echo.priority = 254;
         echo2.priority = 255;
 
         echo.rb_access = "RW";

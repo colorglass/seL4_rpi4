@@ -35,84 +35,6 @@ static uint8_t my_mavlink_parse_char(uint8_t c,
 	return msg_received;
 }
 
-
-static void handle_char(uint8_t c) {
-    ZF_LOGE("%02X", c);
-    // ring_buffer_t *ringbuffer = (ring_buffer_t *) rb;
-    // uint8_t tail = ringbuffer->tail;
-    // rb_acquire();
-    // ringbuffer->buffer[tail++] = c;
-    // rb_release();
-    // ringbuffer->tail = tail;
-    // rb_release();
-    // mavlink_message_t msg;
-    // mavlink_status_t status;
-    // int result = my_mavlink_parse_char(c, &msg, &status);
-    // if (result) {
-    //     LOG_ERROR("Message");
-    // }
-}
-
-void serial_irq_handle(void *data, ps_irq_acknowledge_fn_t acknowledge_fn, void *ack_data) {
-    int error;
-
-    if (serial) {
-        int c = 0;
-        ps_cdev_handle_irq(serial, 0);
-        while (c != EOF) {
-            c = ps_cdev_getchar(serial);
-            if (c != EOF) {
-                handle_char((uint8_t) c);
-            }
-        }
-    }
-
-    error = acknowledge_fn(ack_data);
-    ZF_LOGF_IF(error, "Failed to acknowledge IRQ");
-}
-
-uint8_t my_dma_pool[4096] ALIGN(4096);
-
-void pre_init() {
-    ZF_LOGE("In pre_init2");
-    int error;
-    error = camkes_io_ops(&io_ops);
-    ZF_LOGF_IF(error, "Failed to initialise IO ops");
-
-    serial = ps_cdev_init(BCM2xxx_UART5, &io_ops, &serial_device);
-    if (serial == NULL) {
-        ZF_LOGE("Failed to initialise char device");
-    } else {
-        ZF_LOGI("Initialised char device");
-    }
-
-    // ps_irq_t irq_info = {
-    //     .type = PS_INTERRUPT,
-    //     .irq = {
-    //         .number = UART5_IRQ,
-    //     }
-    // };
-    // irq_id_t serial_irq_id = ps_irq_register(&io_ops.irq_ops, irq_info, serial_irq_handle, NULL);
-    // ZF_LOGF_IF(serial_irq_id < 0, "Failed to register irq");
-
-    // ring_buffer_t *rb = (ring_buffer_t *) rb;
-    // rb->head = 0;
-    // rb_release();
-    // rb->tail = 0;
-    // rb_release();
-
-    if (camkes_dma_init(my_dma_pool, 4096, 4096, 0)) {
-        ZF_LOGF("DMA init failed");
-    }
-    void *dma_ptr = camkes_dma_alloc(0x90, 0, 0);
-    if (!dma_ptr) {
-        ZF_LOGF("DMA alloc failed");
-    }
-    for (int i=0; i<0x90; i++) {
-        LOG_ERROR("%02X", ((char*)dma_ptr)[i]);
-    }
-}
-
 typedef volatile struct pl011_regs_s {
     uint32_t dr;            // 0x00: data register
     uint32_t rsrecr;        // 0x04: receive status/error clear register
@@ -138,6 +60,88 @@ static inline pl011_regs_t *pl011_uart_get_priv(ps_chardevice_t *dev)
     return (pl011_regs_t *)(dev->vaddr);
 }
 
+static pl011_regs_t *regs = NULL;
+
+static void handle_char(uint8_t c) {
+    ZF_LOGE("%02X", c);
+    // ring_buffer_t *ringbuffer = (ring_buffer_t *) rb;
+    // uint8_t tail = ringbuffer->tail;
+    // rb_acquire();
+    // ringbuffer->buffer[tail++] = c;
+    // rb_release();
+    // ringbuffer->tail = tail;
+    // rb_release();
+    // mavlink_message_t msg;
+    // mavlink_status_t status;
+    // int result = my_mavlink_parse_char(c, &msg, &status);
+    // if (result) {
+    //     LOG_ERROR("Message");
+    // }
+}
+
+void serial_irq_handle(void *data, ps_irq_acknowledge_fn_t acknowledge_fn, void *ack_data) {
+    int error;
+
+    if (serial) {
+        int c = 0;
+        ps_cdev_handle_irq(serial, 0);
+        // while (c != EOF) {
+            uint32_t buf[300];
+            uint32_t len = ps_cdev_read(serial, buf, sizeof(buf), NULL, NULL);
+            for (uint32_t i=0; i<len; i++) {
+                handle_char(buf[i]);
+            }
+        // }
+    }
+
+    error = acknowledge_fn(ack_data);
+    ZF_LOGF_IF(error, "Failed to acknowledge IRQ");
+}
+
+// uint8_t my_dma_pool[4096] ALIGN(4096);
+
+void pre_init() {
+    ZF_LOGE("In pre_init2");
+    int error;
+    error = camkes_io_ops(&io_ops);
+    ZF_LOGF_IF(error, "Failed to initialise IO ops");
+
+    serial = ps_cdev_init(BCM2xxx_UART5, &io_ops, &serial_device);
+    if (serial == NULL) {
+        ZF_LOGE("Failed to initialise char device");
+    } else {
+        ZF_LOGI("Initialised char device");
+    }
+
+    regs = pl011_uart_get_priv(serial);
+
+    ps_irq_t irq_info = {
+        .type = PS_INTERRUPT,
+        .irq = {
+            .number = UART5_IRQ,
+        }
+    };
+    irq_id_t serial_irq_id = ps_irq_register(&io_ops.irq_ops, irq_info, serial_irq_handle, NULL);
+    ZF_LOGF_IF(serial_irq_id < 0, "Failed to register irq");
+
+    // ring_buffer_t *rb = (ring_buffer_t *) rb;
+    // rb->head = 0;
+    // rb_release();
+    // rb->tail = 0;
+    // rb_release();
+
+    // if (camkes_dma_init(my_dma_pool, 4096, 4096, 0)) {
+    //     ZF_LOGF("DMA init failed");
+    // }
+    // void *dma_ptr = camkes_dma_alloc(0x90, 0, 0);
+    // if (!dma_ptr) {
+    //     ZF_LOGF("DMA alloc failed");
+    // }
+    // for (int i=0; i<0x90; i++) {
+    //     LOG_ERROR("%02X", ((char*)dma_ptr)[i]);
+    // }
+}
+
 int run(void) {
     ZF_LOGE("In run");
 
@@ -151,8 +155,7 @@ int run(void) {
     //     // while ((c = ps_cdev_getchar(serial)) != EOF) {
     //     //     handle_char(c);
     //     // }
-        int ch = EOF;
-
+        // int ch = EOF;
         // while (!(r->fr & BIT(4))) {
         //     ch = (int)(r->dr);
 
