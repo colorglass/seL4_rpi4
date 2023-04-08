@@ -247,10 +247,11 @@ static int pl011_uart_configure(ps_chardevice_t *dev)
      */
     // Enable FIFO
     // colored-dye (2023/03/22): enable FIFO.
-    pl011_uart_enable_fifo(dev);
+    // pl011_uart_enable_fifo(dev);
 
     // IFLS
-    r->ifls &= ~IFLS_RXIFLSEL;
+    // r->ifls &= ~IFLS_RXIFLSEL;
+    // r->ifls |= 0x20;
     // r->dmacr |= DMACR_RXDMAE;
 
     // Enable UART
