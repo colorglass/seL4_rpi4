@@ -86,7 +86,7 @@ void serial_irq_handle(void *data, ps_irq_acknowledge_fn_t acknowledge_fn, void 
         int c = 0;
         ps_cdev_handle_irq(serial, 0);
         // while (c != EOF) {
-            uint32_t buf[300];
+            uint32_t buf[4];
             uint32_t len = ps_cdev_read(serial, buf, sizeof(buf), NULL, NULL);
             for (uint32_t i=0; i<len; i++) {
                 handle_char(buf[i]);
