@@ -68,7 +68,7 @@ static ps_chardevice_t *serial = NULL;
 
 // From Telemetry to Decrypt
 // From outside world to Telemetry
-static queue_t recv_queue;
+// static queue_t recv_queue;
 
 // From Telemetry to outside world
 // From Encrypt to Telemetry
@@ -84,7 +84,7 @@ void pre_init() {
     serial = ps_cdev_init(BCM2xxx_UART3, &io_ops, &serial_device);
     ZF_LOGF_IF(!serial, "Failed to initialise char device");
 
-    queue_init(&recv_queue);
+    // queue_init(&recv_queue);
     queue_init(&send_queue);
 
     // Telem_Data *telem_data = (Telem_Data *) send_Telem_Data_Telemetry2Decrypt;
@@ -92,7 +92,7 @@ void pre_init() {
     // send_Telem_Data_Telemetry2Decrypt_release();
     // memset(telem_data->raw_data, -1, sizeof(telem_data->raw_data));
 
-    recv_post();
+    // recv_post();
     send_post();
 
     LOG_ERROR("Out pre_init");
@@ -110,7 +110,6 @@ static int telemetry_rx_poll() {
     mavlink_message_t msg;
 
     result = my_mavlink_parse_char(c, &msg, &status);
-    // result = mavlink_parse_char(0, c, &msg, &status);
 
     if (status.packet_rx_drop_count) {
         LOG_ERROR("ERROR: Dropped %d packets", status.packet_rx_drop_count);
@@ -127,98 +126,38 @@ static int telemetry_rx_poll() {
 
 static int telemetry_tx_poll() {
     int error = 0;
+    uint32_t size;
+    uint8_t c;
+
+    LOG_ERROR("Telemetry TX started");
+
     send_wait();
 
-    uint32_t size = send_queue.size;
-    // uint8_t c;
+    size = send_queue.size;
 
     // if (!queue_empty(&send_queue)) {
     //     print_queue(&send_queue);
     //     // print_queue_serial(&send_queue);
     // }
 
-    // for (uint32_t i=0; i < size; i++) {
-    //     if (!dequeue(&send_queue, &c)) {
-    //         ps_cdev_putchar(serial, c);
-    //     } else {
-    //         error = -1;
-    //         break;
-    //     }
-    // }
+    for (uint32_t i=0; i < size; i++) {
+        if (!dequeue(&send_queue, &c)) {
+            ps_cdev_putchar(serial, c);
+        } else {
+            error = -1;
+            break;
+        }
+    }
 
-    ps_cdev_write(serial, send_queue.raw_queue, size, NULL, NULL);
-
-    send_queue.size = 0;
+    // ps_cdev_write(serial, send_queue.raw_queue, size, NULL, NULL);
+    // send_queue.size = 0;
 
     send_post();
 
+    LOG_ERROR("Telemetry TX finished");
+
     return error;
 }
-
-// Send encrypted Telem data to Decrypt
-// from recv_queue
-// static int send_to_decrypt(void) {
-//     int error = 0;
-
-//     uint32_t queue_size;
-//     uint32_t data_size;
-
-//     // Wait for RX to push some data into recv_queue
-//     while (1) {
-//         recv_wait();
-//         queue_size = recv_queue.size;
-//         recv_post();
-//         if (queue_size > 0) {
-//             break;
-//         }
-//     }
-
-//     recv_wait();
-//     if (recv_queue.size > sizeof(Telem_Data_raw)) {
-//         data_size = sizeof(Telem_Data_raw);
-//     } else {
-//         data_size = recv_queue.size;
-//     }
-
-//     Telem_Data *telem_data = (Telem_Data*) send_Telem_Data_Telemetry2Decrypt;
-//     uint8_t tmp;
-//     for (uint32_t i=0; i < data_size; i++) {
-//         if (!dequeue(&recv_queue, &tmp)) {
-//             telem_data->raw_data[i] = tmp;
-//             send_Telem_Data_Telemetry2Decrypt_release();
-//         } else {
-//             LOG_ERROR("Should not get here");
-//             data_size = 0;
-//             error = -1;
-//         }
-//     }
-//     telem_data->len = data_size;
-//     recv_post();
-
-//     // LOG_ERROR("To decrypt");
-//     // Telemetry => Decrypt
-//     emit_Telemetry2Decrypt_DataReadyEvent_emit();
-
-//     return error;
-// }
-
-// // Telemetry sends data to Decrypt
-// // when Decrypt gives Telemetry an ACK
-// static void consume_Telemetry2Decrypt_DataReadyAck_callback(void *in_arg UNUSED) {
-//     if (send_to_decrypt()) {
-//         LOG_ERROR("Error sending to decrypt");
-//     }
-
-//     if (consume_Telemetry2Decrypt_DataReadyAck_reg_callback(&consume_Telemetry2Decrypt_DataReadyAck_callback, NULL)) {
-//         ZF_LOGF("Failed to register Telemetry2Decrypt_DataReadyAck callback");
-//     }
-// }
-
-// void consume_Telemetry2Decrypt_DataReadyAck__init() {
-//     if (consume_Telemetry2Decrypt_DataReadyAck_reg_callback(&consume_Telemetry2Decrypt_DataReadyAck_callback, NULL)) {
-//         ZF_LOGF("Failed to register Telemetry2Decrypt_DataReadyAck callback");
-//     }
-// }
 
 // Read encrypted Telem data from Encrypt
 // and push to send_queue
@@ -229,16 +168,18 @@ static int read_from_encrypt(void) {
     
     send_wait();
 
-    if (telem_data->len + send_queue.size > MAX_QUEUE_SIZE) {
-        LOG_ERROR("Send queue not enough!");
-    }
-    recv_Telem_Data_Encrypt2Telemetry_acquire();
-
     uint32_t data_len = telem_data->len;
     recv_Telem_Data_Encrypt2Telemetry_acquire();
+
+    // Abandon the rest of the data in shared memory
+    if (data_len + send_queue.size > MAX_QUEUE_SIZE) {
+        LOG_ERROR("WARNING: Send queue not enough!");
+        data_len = MAX_QUEUE_SIZE - send_queue.size;
+    }
+
     for (uint32_t i=0; i < data_len; i++) {
         if (enqueue(&send_queue, telem_data->raw_data[i])) {
-            LOG_ERROR("Send queue full!");
+            LOG_ERROR("WARNING: Send queue full!");
             recv_Telem_Data_Encrypt2Telemetry_acquire();
             error = -1;
             break;

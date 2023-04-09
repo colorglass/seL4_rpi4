@@ -153,8 +153,6 @@ static void Encrypt_FC_Data_to_Telem_Data() {
 static int send_to_telemetry(void) {
     int error = 0;
 
-    uint32_t data_size;
-
     // Wait until send_queue is not empty,
     // because xxxAck_callback is invoked
     // once for each ACK
@@ -163,22 +161,22 @@ static int send_to_telemetry(void) {
     }
 
     Telem_Data *telem_data = (Telem_Data *) send_Telem_Data_Encrypt2Telemetry;
-    data_size = telem_data->len;
-    send_Telem_Data_Encrypt2Telemetry_acquire();
 
     // Protect send_queue
     send_wait();
 
     uint32_t queue_size = send_queue.size;
-    if (queue_size + data_size > sizeof(Telem_Data_raw)) {
-        LOG_ERROR("WARNING: Telem data not enough");
-        queue_size = sizeof(Telem_Data_raw) - data_size;
+    // send_queue is larger than shared memory.
+    if (queue_size > sizeof(Telem_Data_raw)) {
+        // LOG_ERROR("WARNING: Telem data not enough");
+        queue_size = sizeof(Telem_Data_raw);
     }
 
     uint8_t tmp;
     for (uint32_t i=0; i<queue_size; i++) {
         if (dequeue(&send_queue, &tmp)) {
             LOG_ERROR("Should not get here");
+            send_Telem_Data_Encrypt2Telemetry_release();
             break;
         }
         telem_data->raw_data[i] = tmp;
@@ -224,7 +222,7 @@ void consume_Encrypt2Telemetry_DataReadyAck__init(void) {
 // Push to recv_queue
 static void rx_poll() {
     ring_buffer_t *rb = (ring_buffer_t *) ring_buffer;
-    uint8_t head, tail, idx;
+    uint32_t head, tail, idx;
     uint32_t buffer_size, copy_size;
     int error = 0;
 
@@ -243,7 +241,8 @@ static void rx_poll() {
         }
         for (uint32_t i=0; i<copy_size; i++) {
             error = enqueue(&recv_queue, rb->buffer[idx]);
-            idx++;
+            // idx++;
+            idx = (idx + 1) % RING_BUFFER_SIZE;
             if (error) {
                 LOG_ERROR("Should not get here");
                 break;

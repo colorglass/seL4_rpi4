@@ -8,14 +8,14 @@
 #include "mavlink/v2.0/mavlink_types.h"
 
 /* Flight Control Data. Plaintext. */
-typedef uint8_t FC_Data_raw [300];
+typedef uint8_t FC_Data_raw [2048];
 typedef struct FC_Data {
     FC_Data_raw raw_data;
     uint32_t len;
 } FC_Data;
 
 /* Telemetry Data. Encrypted. */
-typedef uint8_t Telem_Data_raw [300];
+typedef uint8_t Telem_Data_raw [2048];
 typedef struct Telem_Data {
     Telem_Data_raw raw_data;
     uint32_t len;
@@ -26,11 +26,11 @@ typedef struct Telem_Data {
  * Allow wrap around.
  */
 
-#define RING_BUFFER_SIZE 256
+#define RING_BUFFER_SIZE 1024
 typedef struct _ring_buffer {
     uint8_t buffer[RING_BUFFER_SIZE];
-    uint8_t head;
-    uint8_t tail;
+    uint32_t head;
+    uint32_t tail;
 } ring_buffer_t;
 
 /**

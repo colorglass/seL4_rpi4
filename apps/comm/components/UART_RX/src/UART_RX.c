@@ -67,7 +67,7 @@ void pre_init() {
 
 static inline void uart_rx_poll(void) {
     int c;
-    uint8_t tail;
+    uint32_t tail;
     ring_buffer_t *rb = (ring_buffer_t *) ring_buffer;
 
     while ((c = ps_cdev_getchar(serial)) == EOF) {
@@ -79,8 +79,8 @@ static inline void uart_rx_poll(void) {
     rb->buffer[tail] = c;
     ring_buffer_release();
 
-    // tail = (tail + 1) % RING_BUFFER_SIZE;
-    tail++; // uint8_t saves modular operation
+    tail = (tail + 1) % RING_BUFFER_SIZE;
+    // tail++; // uint8_t saves modular operation
     rb->tail = tail;
     ring_buffer_release();
 }
