@@ -80,6 +80,8 @@ set(LibSel4MuslcSysDebugHalt FALSE CACHE BOOL "" FORCE)
 # Only configure a single domain for the domain scheduler
 set(KernelNumDomains 1 CACHE STRING "" FORCE)
 
+set(KernelMaxNumNodes 4 CACHE STRING "" FORCE)
+
 # Export generic timer to user
 # TODO: Implement another timer and remove these two later
 # set(KernelArmExportPCNTUser TRUE CACHE BOOL "" FORCE)

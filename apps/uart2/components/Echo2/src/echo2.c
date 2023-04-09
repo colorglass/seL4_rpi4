@@ -62,6 +62,8 @@ static inline pl011_regs_t *pl011_uart_get_priv(ps_chardevice_t *dev)
 
 static pl011_regs_t *regs = NULL;
 
+ring_buffer_t ringbuffer;
+
 static void handle_char(uint8_t c) {
     ZF_LOGE("%02X", c);
     // ring_buffer_t *ringbuffer = (ring_buffer_t *) rb;
@@ -85,7 +87,7 @@ void serial_irq_handle(void *data, ps_irq_acknowledge_fn_t acknowledge_fn, void 
     if (serial) {
         int c = 0;
         ps_cdev_handle_irq(serial, 0);
-        // while (c != EOF) {
+        while (c != EOF) {
             // uint32_t buf[16];
             // uint32_t len = ps_cdev_read(serial, buf, sizeof(buf), NULL, NULL);
             // for (uint32_t i=0; i<len; i++) {
@@ -94,9 +96,13 @@ void serial_irq_handle(void *data, ps_irq_acknowledge_fn_t acknowledge_fn, void 
             // while (regs->fr & BIT(3)) {
 
             // }
-            c = regs->dr & MASK(8);
-            handle_char(c);
-        // }
+            // c = regs->dr & MASK(8);
+            c = ps_cdev_getchar(serial);
+            if (c != EOF) {
+                // handle_char(c);
+                ringbuffer.buffer[ringbuffer.tail++] = c;
+            }
+        }
     }
 
     error = acknowledge_fn(ack_data);
@@ -129,11 +135,7 @@ void pre_init() {
     irq_id_t serial_irq_id = ps_irq_register(&io_ops.irq_ops, irq_info, serial_irq_handle, NULL);
     ZF_LOGF_IF(serial_irq_id < 0, "Failed to register irq");
 
-    // ring_buffer_t *rb = (ring_buffer_t *) rb;
-    // rb->head = 0;
-    // rb_release();
-    // rb->tail = 0;
-    // rb_release();
+    ringbuffer.head = ringbuffer.tail = 0;
 
     // if (camkes_dma_init(my_dma_pool, 4096, 4096, 0)) {
     //     ZF_LOGF("DMA init failed");
@@ -150,27 +152,10 @@ void pre_init() {
 int run(void) {
     ZF_LOGE("In run");
 
-    // pl011_regs_t *r = pl011_uart_get_priv(serial);
     while (1) {
-        // int c = EOF;
-        // while ((c = ps_cdev_getchar(serial)) == EOF) {
-            
-        // }
-        // handle_char(c);
-    //     // while ((c = ps_cdev_getchar(serial)) != EOF) {
-    //     //     handle_char(c);
-    //     // }
-        // int ch = EOF;
-        // while (!(r->fr & BIT(4))) {
-        //     ch = (int)(r->dr);
-
-        //     if (ch & 0xff00) {
-        //         LOG_ERROR("ERROR: %04X", ch);
-        //     }
-
-        //     ch &= MASK(8);
-        //     handle_char(ch);
-        // }
+        if (ringbuffer.head != ringbuffer.tail) {
+            handle_char(ringbuffer.buffer[ringbuffer.head++]);
+        }
     }
     return 0;
 }

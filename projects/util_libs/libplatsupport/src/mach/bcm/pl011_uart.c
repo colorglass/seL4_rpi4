@@ -125,7 +125,7 @@ static void pl011_uart_handle_irq(ps_chardevice_t *dev)
     pl011_regs_t *r = pl011_uart_get_priv(dev);
 
     // Clear (all) interrupts
-    r->icr = 0x7ff;
+    r->icr = 0x7f0;
 }
 
 static int pl011_uart_cr_configure(ps_chardevice_t *dev)
@@ -179,18 +179,22 @@ static int pl011_uart_baudrate_div_configure(ps_chardevice_t *dev)
         break;
     }
 
-    double baud_div = (double) freq_uart_clk / (double)(16.0 * baud_rate);
-    double frac_div = baud_div - (uint32_t) baud_div;
+    // double baud_div = (double) freq_uart_clk / (double)(16.0 * baud_rate);
+    // double frac_div = baud_div - (uint32_t) baud_div;
+    uint32_t divisor = (freq_uart_clk * 4) / baud_rate;
+    uint32_t val;
     pl011_regs_t *r = pl011_uart_get_priv(dev);
 
     // Set IBRD register
-    uint32_t val = r->ibrd;
-    val |= (uint32_t) baud_div;
+    // uint32_t val = r->ibrd;
+    // val |= (uint32_t) baud_div;
+    val = divisor >> 6;
     r->ibrd = val;
 
     // Set FBRD register
-    val = r->fbrd;
-    val |= (uint32_t)(frac_div * 64.0 + 0.5);
+    // val = r->fbrd;
+    // val |= (uint32_t)(frac_div * 64.0 + 0.5);
+    val = divisor & 0x3f;
     r->fbrd = val;
 
     return 0;
@@ -247,7 +251,7 @@ static int pl011_uart_configure(ps_chardevice_t *dev)
      */
     // Enable FIFO
     // colored-dye (2023/03/22): enable FIFO.
-    // pl011_uart_enable_fifo(dev);
+    pl011_uart_enable_fifo(dev);
 
     // IFLS
     // r->ifls &= ~IFLS_RXIFLSEL;
@@ -258,7 +262,8 @@ static int pl011_uart_configure(ps_chardevice_t *dev)
     pl011_uart_enable(dev);
 
     // Enable RX interrupt
-    pl011_uart_enable_rx_irq(dev);
+    // pl011_uart_enable_rx_irq(dev);
+    r->imsc |= 0x50;
 
     return 0;
 }
