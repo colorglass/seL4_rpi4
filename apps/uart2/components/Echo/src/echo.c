@@ -10,29 +10,11 @@ static ps_chardevice_t serial_device;
 static ps_chardevice_t *serial = NULL;
 
 static void handle_char(uint8_t c) {
-    // ZF_LOGE("%02X", c);
+    ZF_LOGE("%02X", c);
     // ps_cdev_putchar(serial, '0');
     // ps_cdev_putchar(serial, ':');
     // ps_cdev_putchar(serial, c);
     // ps_cdev_putchar(serial, '\n');
-}
-
-void serial_irq_handle(void *data, ps_irq_acknowledge_fn_t acknowledge_fn, void *ack_data) {
-    int error;
-
-    if (serial) {
-        int c = 0;
-        ps_cdev_handle_irq(serial, 0);
-        while (c != EOF) {
-            c = ps_cdev_getchar(serial);
-            if (c != EOF) {
-                handle_char((uint8_t) c);
-            }
-        }
-    }
-
-    error = acknowledge_fn(ack_data);
-    ZF_LOGF_IF(error, "Failed to acknowledge IRQ");
 }
 
 void pre_init() {
@@ -68,18 +50,19 @@ int run(void) {
         // }
         // ps_cdev_putchar(serial, c);
         // ps_cdev_putchar(serial, '\n');
-        // ring_buffer_t *ringbuffer = (ring_buffer_t *) rb;
-        // uint8_t head, tail;
-        // head = ringbuffer->head;
-        // rb_acquire();
-        // tail = ringbuffer->tail;
-        // rb_acquire();
-        // if (head != tail) {
-        //     handle_char(ringbuffer->buffer[head++]);
-        //     rb_acquire();
-        //     ringbuffer->head = head;
-        //     rb_release();
-        // }
+        ring_buffer_t *ringbuffer = (ring_buffer_t *) rb;
+        uint16_t head, tail;
+        head = ringbuffer->head;
+        rb_acquire();
+        tail = ringbuffer->tail;
+        rb_acquire();
+        if (head != tail) {
+            handle_char(ringbuffer->buffer[head]);
+            rb_acquire();
+            head = (head + 1) % sizeof(ringbuffer->buffer);
+            ringbuffer->head = head;
+            rb_release();
+        }
     }
     return 0;
 }

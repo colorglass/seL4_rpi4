@@ -62,7 +62,7 @@ static inline pl011_regs_t *pl011_uart_get_priv(ps_chardevice_t *dev)
 
 static pl011_regs_t *regs = NULL;
 
-ring_buffer_t ringbuffer;
+// ring_buffer_t ringbuffer;
 
 static void handle_char(uint8_t c) {
     ZF_LOGE("%02X", c);
@@ -87,6 +87,7 @@ void serial_irq_handle(void *data, ps_irq_acknowledge_fn_t acknowledge_fn, void 
     if (serial) {
         int c = 0;
         ps_cdev_handle_irq(serial, 0);
+
         while (c != EOF) {
             // uint32_t buf[16];
             // uint32_t len = ps_cdev_read(serial, buf, sizeof(buf), NULL, NULL);
@@ -100,7 +101,16 @@ void serial_irq_handle(void *data, ps_irq_acknowledge_fn_t acknowledge_fn, void 
             c = ps_cdev_getchar(serial);
             if (c != EOF) {
                 // handle_char(c);
-                ringbuffer.buffer[ringbuffer.tail++] = c;
+                // ringbuffer.buffer[ringbuffer.tail++] = c;
+                uint16_t tail;
+                ring_buffer_t *ringbuffer = (ring_buffer_t *) rb;
+                tail = ringbuffer->tail;
+                rb_acquire();
+                ringbuffer->buffer[tail] = c;
+                rb_release();
+                tail = (tail + 1) % sizeof(ringbuffer->buffer);
+                ringbuffer->tail = tail;
+                rb_release();
             }
         }
     }
@@ -126,16 +136,22 @@ void pre_init() {
 
     regs = pl011_uart_get_priv(serial);
 
-    ps_irq_t irq_info = {
-        .type = PS_INTERRUPT,
-        .irq = {
-            .number = UART5_IRQ,
-        }
-    };
-    irq_id_t serial_irq_id = ps_irq_register(&io_ops.irq_ops, irq_info, serial_irq_handle, NULL);
-    ZF_LOGF_IF(serial_irq_id < 0, "Failed to register irq");
+    // ps_irq_t irq_info = {
+    //     .type = PS_INTERRUPT,
+    //     .irq = {
+    //         .number = UART5_IRQ,
+    //     }
+    // };
+    // irq_id_t serial_irq_id = ps_irq_register(&io_ops.irq_ops, irq_info, serial_irq_handle, NULL);
+    // ZF_LOGF_IF(serial_irq_id < 0, "Failed to register irq");
 
-    ringbuffer.head = ringbuffer.tail = 0;
+    // ringbuffer.head = ringbuffer.tail = 0;
+
+    ring_buffer_t *ringbuffer = (ring_buffer_t *) rb;
+    ringbuffer->head = 0;
+    rb_release();
+    ringbuffer->tail = 0;
+    rb_release();
 
     // if (camkes_dma_init(my_dma_pool, 4096, 4096, 0)) {
     //     ZF_LOGF("DMA init failed");
@@ -153,9 +169,32 @@ int run(void) {
     ZF_LOGE("In run");
 
     while (1) {
-        if (ringbuffer.head != ringbuffer.tail) {
-            handle_char(ringbuffer.buffer[ringbuffer.head++]);
+        // uint32_t buf[16];
+        // uint32_t len = ps_cdev_read(serial, buf, sizeof(buf), NULL, NULL);
+        // for (uint32_t i=0; i<len; i++) {
+        //     handle_char(buf[i]);
+        // }
+        // while (regs->fr & BIT(3)) {
+
+        // }
+        // c = regs->dr & MASK(8);
+        int c;
+        while ((c = ps_cdev_getchar(serial)) == EOF) {
+
         }
+        // while (c != EOF) {
+            // handle_char(c);
+            // ringbuffer.buffer[ringbuffer.tail++] = c;
+            uint16_t tail;
+            ring_buffer_t *ringbuffer = (ring_buffer_t *) rb;
+            tail = ringbuffer->tail;
+            rb_acquire();
+            ringbuffer->buffer[tail] = c;
+            rb_release();
+            tail = (tail + 1) % sizeof(ringbuffer->buffer);
+            ringbuffer->tail = tail;
+            rb_release();
+        // }
     }
     return 0;
 }

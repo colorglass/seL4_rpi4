@@ -20,6 +20,9 @@ assembly {
     }
 
     configuration {
+        echo.affinity = 0;
+        echo2.affinity = 1;
+
         echo.priority = 254;
         echo2.priority = 255;
 
