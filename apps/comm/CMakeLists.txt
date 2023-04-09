@@ -53,16 +53,28 @@ DeclareCAmkESComponent(
     SOURCES ${Encrypt_deps}
 )
 
-# UART
+# UART TX
 file(
     GLOB
-        UART_deps
-        components/UART/src/*.c
+        UART_TX_deps
+        components/UART_TX/src/*.c
 )
 DeclareCAmkESComponent(
-    UART
+    UART_TX
     INCLUDES include
-    SOURCES ${UART_deps}
+    SOURCES ${UART_TX_deps}
+)
+
+# UART RX
+file(
+    GLOB
+        UART_RX_deps
+        components/UART_RX/src/*.c
+)
+DeclareCAmkESComponent(
+    UART_RX
+    INCLUDES include
+    SOURCES ${UART_RX_deps}
 )
 
 DeclareCAmkESRootserver(comm.camkes)

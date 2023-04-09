@@ -7,26 +7,31 @@
 
 #include "mavlink/v2.0/mavlink_types.h"
 
+/* Flight Control Data. Plaintext. */
 typedef uint8_t FC_Data_raw [300];
 typedef struct FC_Data {
     FC_Data_raw raw_data;
     uint32_t len;
 } FC_Data;
 
+/* Telemetry Data. Encrypted. */
 typedef uint8_t Telem_Data_raw [300];
 typedef struct Telem_Data {
     Telem_Data_raw raw_data;
     uint32_t len;
 } Telem_Data;
 
-#define serial_printf(...) do { \
-    char __str[256]; \
-    sprintf(__str, __VA_ARGS__); \
-    for (uint32_t i=0; i<sizeof(__str) && __str[i]; i++) { \
-        ps_cdev_putchar(serial, __str[i]); \
-    } \
-} while (0)
+/**
+ * Ring buffer.
+ * Allow wrap around.
+ */
 
+#define RING_BUFFER_SIZE 256
+typedef struct _ring_buffer {
+    uint8_t buffer[RING_BUFFER_SIZE];
+    uint8_t head;
+    uint8_t tail;
+} ring_buffer_t;
 
 /**
  * MAVLink message
@@ -37,6 +42,13 @@ typedef struct MAVLink_Message {
     uint8_t is_msg;
 } MAVLink_Message_t;
 
+#define serial_printf(...) do { \
+    char __str[256]; \
+    sprintf(__str, __VA_ARGS__); \
+    for (uint32_t i=0; i<sizeof(__str) && __str[i]; i++) { \
+        ps_cdev_putchar(serial, __str[i]); \
+    } \
+} while (0)
 
 /*
  * Queue

@@ -3,9 +3,9 @@
 
 #include <stdint.h>
 typedef struct ring_buffer {
-    uint8_t buffer[2048];
-    uint16_t head;
-    uint16_t tail;
+    uint8_t buffer[256];
+    uint8_t head;
+    uint8_t tail;
 } ring_buffer_t;
 
 #endif

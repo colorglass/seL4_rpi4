@@ -168,12 +168,9 @@ static int pl011_uart_baudrate_div_configure(ps_chardevice_t *dev)
     uint32_t baud_rate;
     switch (dev->id) {
     case BCM2xxx_UART3: // Telemetry
-    case BCM2xxx_UART5: // Pixhawk
+    // case BCM2xxx_UART5: // Pixhawk
         baud_rate = 57600;
         break;
-    // case BCM2xxx_UART5:
-    //     baud_rate = 1200;
-    //     break;
     default:
         baud_rate = 115200;
         break;

@@ -1,27 +1,29 @@
 import "../GPIO/GPIO.camkes";
-import "../../interfaces/uart.idl4";
+// import "../../interfaces/uart.idl4";
 
-component UART {
+component UART_RX {
     include <top_types.h>;
     control;
 
-    has semaphore uart_send;
-    has semaphore uart_recv;
+    // has semaphore uart_recv;
 
     dataport Buf(4096) gpiohw_mem;
 
     emits Dummy dummy_source;
     consumes Dummy serial_dev;
 
-    consumes Decrypt2UART_DataReadyEvent consume_Decrypt2UART_DataReadyEvent;
-    emits Decrypt2UART_DataReadyAck emit_Decrypt2UART_DataReadyAck;
+    // consumes Decrypt2UART_DataReadyEvent consume_Decrypt2UART_DataReadyEvent;
+    // emits Decrypt2UART_DataReadyAck emit_Decrypt2UART_DataReadyAck;
 
     // emits UART2Encrypt_DataReadyEvent emit_UART2Encrypt_DataReadyEvent;
     // consumes UART2Encrypt_DataReadyAck consume_UART2Encrypt_DataReadyAck;
 
-    uses uart getchar;
+    // uses uart getchar;
 
-    dataport FC_Data recv_FC_Data_Decrypt2UART;
+    // From UART RX to Encrypt
+    dataport ring_buffer_t ring_buffer;
+
+    // dataport FC_Data recv_FC_Data_Decrypt2UART;
     // dataport FC_Data send_FC_Data_UART2Encrypt;
 
     composition {

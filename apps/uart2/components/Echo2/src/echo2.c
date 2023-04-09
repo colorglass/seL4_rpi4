@@ -185,7 +185,7 @@ int run(void) {
         // while (c != EOF) {
             // handle_char(c);
             // ringbuffer.buffer[ringbuffer.tail++] = c;
-            uint16_t tail;
+            uint8_t tail;
             ring_buffer_t *ringbuffer = (ring_buffer_t *) rb;
             tail = ringbuffer->tail;
             rb_acquire();

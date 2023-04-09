@@ -51,7 +51,7 @@ int run(void) {
         // ps_cdev_putchar(serial, c);
         // ps_cdev_putchar(serial, '\n');
         ring_buffer_t *ringbuffer = (ring_buffer_t *) rb;
-        uint16_t head, tail;
+        uint8_t head, tail;
         head = ringbuffer->head;
         rb_acquire();
         tail = ringbuffer->tail;
