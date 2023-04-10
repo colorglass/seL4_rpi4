@@ -13,11 +13,11 @@
 #include "ed25519.h"
 #include "ed25519-hash.h"
 
-#define _GEC_ID_LEN 4
+#define _GEC_ID_LEN 0
 #define _GEC_SALT_LEN 8
 #define _GEC_CTR_LEN 4
-// #define _GEC_TAG_LEN 12            /* 8 byte GCM tags */
-#define _GEC_TAG_LEN 8
+#define _GEC_TAG_LEN 12            /* 8 byte GCM tags */
+// #define _GEC_TAG_LEN 8
 #define _GEC_SYM_CIPHER_KEY_LEN 16 /* AES 128, hardcoded, should fix */
 #define _CTR_IV_LEN 16
 #define _GCM_IV_LEN 12

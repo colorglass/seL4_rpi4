@@ -1,7 +1,7 @@
 .cache/
 .sel4_cache/
 mavlink/v2.0/
-/build/
+build/
 /backup/*
 !/backup/firmware/
 # /kernel/
