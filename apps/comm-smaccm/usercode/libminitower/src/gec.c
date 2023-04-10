@@ -1,4 +1,5 @@
 #include "gec.h"
+#include <stdint.h>
 
 static inline uint64_t _read_word64_be(const uint8_t buf[8])
 {
@@ -120,13 +121,16 @@ int GEC_FN(gec_encrypt)(struct gec_sym_key *k, const uint8_t pt[GEC_PT_LEN], uin
         ret = GEC_ERROR_COUNTER_ROLLOVER;
     } else {
         int gcm_ret;
+
+        *(uint32_t*) ct = 0; // id = 0
+
         k->ctr++;
         _write_word32_be(iv, k->ctr);
-        _write_word32_be(ct, k->ctr);
+        _write_word32_be(ct + _GEC_ID_LEN, k->ctr);
         memcpy(iv+sizeof(uint32_t), k->salt, _GEC_SALT_LEN);
-        memcpy(ct + _GEC_CTR_LEN, pt, GEC_PT_LEN);
+        memcpy(ct + _GEC_ID_LEN + _GEC_CTR_LEN, pt, GEC_PT_LEN);
 
-        gcm_ret = gcm_encrypt_message(iv, _GCM_IV_LEN, NULL, 0, ct + _GEC_CTR_LEN, GEC_PT_LEN, tag, _GEC_TAG_LEN, &k->gctx);
+        gcm_ret = gcm_encrypt_message(iv, _GCM_IV_LEN, NULL, 0, ct + _GEC_ID_LEN + _GEC_CTR_LEN, GEC_PT_LEN, tag, _GEC_TAG_LEN, &k->gctx);
         memset(iv,0,_GCM_IV_LEN);
         if(RETURN_GOOD == gcm_ret) {
             ret = GEC_SUCCESS;
@@ -145,14 +149,14 @@ int GEC_FN(gec_decrypt)(struct gec_sym_key *k, const uint8_t ct[GEC_CT_LEN], uin
     uint64_t their_counter;
     int ret = GEC_ERROR_INVALID;
 
-    their_counter = _read_word32_be(ct);
+    their_counter = _read_word32_be(ct + _GEC_ID_LEN);
     if(their_counter <= k->ctr) {
         ret = GEC_ERROR_DUPLICATE_COUNTER;
     } else {
         int gcm_ret;
-        memcpy(iv, ct, _GEC_CTR_LEN);
+        memcpy(iv, ct + _GEC_ID_LEN, _GEC_CTR_LEN);
         memcpy(iv + _GEC_CTR_LEN, k->salt, _GEC_SALT_LEN);
-        memcpy(pt, ct+_GEC_CTR_LEN, GEC_PT_LEN);
+        memcpy(pt, ct + _GEC_ID_LEN + _GEC_CTR_LEN, GEC_PT_LEN);
 
         gcm_ret = gcm_decrypt_message( iv, _GCM_IV_LEN
                                      , NULL, 0 // AAD

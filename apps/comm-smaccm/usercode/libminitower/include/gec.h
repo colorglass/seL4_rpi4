@@ -13,9 +13,11 @@
 #include "ed25519.h"
 #include "ed25519-hash.h"
 
+#define _GEC_ID_LEN 4
 #define _GEC_SALT_LEN 8
 #define _GEC_CTR_LEN 4
-#define _GEC_TAG_LEN 12            /* 8 byte GCM tags */
+// #define _GEC_TAG_LEN 12            /* 8 byte GCM tags */
+#define _GEC_TAG_LEN 8
 #define _GEC_SYM_CIPHER_KEY_LEN 16 /* AES 128, hardcoded, should fix */
 #define _CTR_IV_LEN 16
 #define _GCM_IV_LEN 12
@@ -25,8 +27,8 @@
 #endif
 
 #define GEC_RAW_KEY_LEN (_GEC_SALT_LEN + _GEC_SYM_CIPHER_KEY_LEN)
-#define GEC_PT_LEN      80        /* size drivine by HACMS needs */
-#define GEC_CT_LEN (_GEC_CTR_LEN + GEC_PT_LEN + _GEC_TAG_LEN)
+#define GEC_PT_LEN      280        /* size drivine by HACMS needs */
+#define GEC_CT_LEN (_GEC_ID_LEN + _GEC_CTR_LEN + GEC_PT_LEN + _GEC_TAG_LEN)
 
 #define GEC_SIG_LEN 64          /* XXX floodberry's code uses a constant, no other CPP to leverage */
 #define GEC_PUB_KEY_LEN  32                     /* from ed25519-donna */

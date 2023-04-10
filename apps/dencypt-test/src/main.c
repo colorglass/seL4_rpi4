@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include "gec.h"
 #include "gec-ke.h"
@@ -42,6 +43,19 @@ void print_pubkey(struct gec_pubkey *pubkey) {
     puts("====================================");
 }
 
+void print_pt(uint8_t pt[GEC_PT_LEN]) {
+    puts("====================================");
+    puts("Plaintext");
+    for (int i=0; i<GEC_PT_LEN; i++) {
+        printf("%02X ", pt[i]);
+        if ((i+1)%12 == 0) {
+            putchar('\n');
+        }
+    }
+    putchar('\n');
+    puts("====================================");
+}
+
 void print_ct(uint8_t ct[GEC_CT_LEN]) {
     puts("====================================");
     puts("Cyphertext");
@@ -51,6 +65,7 @@ void print_ct(uint8_t ct[GEC_CT_LEN]) {
             putchar('\n');
         }
     }
+    putchar('\n');
     puts("====================================");
 }
 
@@ -138,7 +153,74 @@ int main() {
         !memcmp(&P1.symkey_chan2, &P2.symkey_chan2, sizeof(struct gec_sym_key)))
     {
         puts("GEC symkey correct!");
+    } else {
+        puts("GEC symkey correct!");
     }
+
+    /******************************************************************/
+    /*                    Encrypt/Decrypt test                        */
+
+    /**
+     * Channel 1 Encrypt/Decrypt test
+     */
+    
+    puts("====================================");
+    puts("Channel 1 Encrypt/Decrypt test");
+    uint8_t pt1[GEC_PT_LEN];
+    uint8_t ct1[GEC_CT_LEN];
+    uint8_t pt1_new[GEC_PT_LEN];
+    for (int i=0; i<GEC_PT_LEN; i++) {
+        pt1[i] = rand();
+    }
+    if (gec_encrypt(&P1.symkey_chan1, pt1, ct1) != GEC_SUCCESS) {
+        puts("Encrypt failed");
+    } else {
+        puts("Encrypt success");
+    }
+
+    if (gec_decrypt(&P2.symkey_chan1, ct1, pt1_new) != GEC_SUCCESS) {
+        puts("Decrypt failed");
+    } else {
+        puts("Decrypt success");
+    }
+
+    if (memcmp(pt1, pt1_new, GEC_PT_LEN)) {
+        puts("Decrypted message wrong");
+    } else {
+        puts("Decrypted message correct");
+    }
+    puts("====================================");
+
+    /**
+     * Channel 2 Encrypt/Decrypt test
+     */
+    
+    puts("====================================");
+    puts("Channel 2 Encrypt/Decrypt test");
+    uint8_t pt2[GEC_PT_LEN];
+    uint8_t ct2[GEC_CT_LEN];
+    uint8_t pt2_new[GEC_PT_LEN];
+    for (int i=0; i<GEC_PT_LEN; i++) {
+        pt2[i] = rand();
+    }
+    if (gec_encrypt(&P1.symkey_chan2, pt2, ct2) != GEC_SUCCESS) {
+        puts("Encrypt failed");
+    } else {
+        puts("Encrypt success");
+    }
+
+    if (gec_decrypt(&P2.symkey_chan2, ct2, pt2_new) != GEC_SUCCESS) {
+        puts("Decrypt failed");
+    } else {
+        puts("Decrypt success");
+    }
+
+    if (memcmp(pt2, pt2_new, GEC_PT_LEN)) {
+        puts("Decrypted message wrong");
+    } else {
+        puts("Decrypted message correct");
+    }
+    puts("====================================");
 
     return 0;
 }
