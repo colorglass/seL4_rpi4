@@ -10,4 +10,3 @@ dtoverlay=uart5
 #init_uart_baud=57600
 enable_uart=1
 #dtparam=spi=on
-

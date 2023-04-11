@@ -80,15 +80,13 @@ set(LibSel4MuslcSysDebugHalt FALSE CACHE BOOL "" FORCE)
 # Only configure a single domain for the domain scheduler
 set(KernelNumDomains 1 CACHE STRING "" FORCE)
 
-# Export generic timer to user
-# TODO: Implement another timer and remove these two later
-# set(KernelArmExportPCNTUser TRUE CACHE BOOL "" FORCE)
-# set(KernelArmExportPTMRUser TRUE CACHE BOOL "" FORCE)
+# Enable SMP support
+set(KernelMaxNumNodes 4 CACHE STRING "" FORCE)
 
 # Serial output relies on Debug settings
 ApplyCommonReleaseVerificationSettings(FALSE FALSE)
 
-project(telemetry C)
+project(comm C)
 
 find_package(camkes-tool REQUIRED)
 camkes_tool_setup_camkes_build_environment()
@@ -101,7 +99,39 @@ if("${GLOBAL_COMPONENTS_PATH}" STREQUAL "GLOBAL_COMPONENTS_PATH-NOTFOUND")
 endif()
 include(${GLOBAL_COMPONENTS_PATH})
 
-DeclareCAmkESComponent(Echo SOURCES components/Echo/src/echo.c)
+# GEC crypto library
+add_subdirectory(GEC)
 
-DeclareCAmkESRootserver(telem.camkes)
+DeclareCAmkESComponent(
+    Pixhawk_RX
+    INCLUDES include
+    SOURCES components/Pixhawk_RX/src/Pixhawk_RX.c
+)
+
+DeclareCAmkESComponent(
+    Pixhawk_TX
+    INCLUDES include
+    SOURCES components/Pixhawk_TX/src/Pixhawk_TX.c
+)
+
+DeclareCAmkESComponent(
+    Telemetry_RX
+    INCLUDES include
+    SOURCES components/Telemetry_RX/src/Telemetry_RX.c
+)
+
+DeclareCAmkESComponent(
+    Telemetry_TX
+    INCLUDES include
+    SOURCES components/Telemetry_TX/src/Telemetry_TX.c
+)
+
+DeclareCAmkESComponent(
+    Decrypt
+    INCLUDES include GEC/include
+    SOURCES components/Decrypt/src/Decrypt.c
+    LIBS GEC
+)
+
+DeclareCAmkESRootserver(comm.camkes)
 GenerateCAmkESRootserver()
