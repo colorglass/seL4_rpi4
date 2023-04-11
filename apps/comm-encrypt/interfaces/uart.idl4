@@ -1,3 +1,0 @@
-procedure uart {
-    void uart_write(refin uint8_t message, in uint32_t len);
-};

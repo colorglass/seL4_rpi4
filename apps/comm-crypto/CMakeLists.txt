@@ -83,15 +83,10 @@ set(KernelNumDomains 1 CACHE STRING "" FORCE)
 # Enable SMP support
 set(KernelMaxNumNodes 4 CACHE STRING "" FORCE)
 
-# Export generic timer to user
-# TODO: Implement another timer and remove these two later
-# set(KernelArmExportPCNTUser TRUE CACHE BOOL "" FORCE)
-# set(KernelArmExportPTMRUser TRUE CACHE BOOL "" FORCE)
-
 # Serial output relies on Debug settings
 ApplyCommonReleaseVerificationSettings(FALSE FALSE)
 
-project(uart C)
+project(comm C)
 
 find_package(camkes-tool REQUIRED)
 camkes_tool_setup_camkes_build_environment()
@@ -104,12 +99,48 @@ if("${GLOBAL_COMPONENTS_PATH}" STREQUAL "GLOBAL_COMPONENTS_PATH-NOTFOUND")
 endif()
 include(${GLOBAL_COMPONENTS_PATH})
 
+# GEC crypto library
+add_subdirectory(GEC)
+
 set(mavlink_include_path "${project_dir}/mavlink/include" CACHE STRING "" FORCE)
 
-DeclareCAmkESComponent(UART_RX INCLUDES include ${mavlink_include_path} SOURCES components/UART_RX/src/UART_RX.c)
-DeclareCAmkESComponent(UART_TX INCLUDES include ${mavlink_include_path} SOURCES components/UART_TX/src/UART_TX.c)
-DeclareCAmkESComponent(Telemetry_RX INCLUDES include ${mavlink_include_path} SOURCES components/Telemetry_RX/src/Telemetry_RX.c)
-DeclareCAmkESComponent(Telemetry_TX INCLUDES include ${mavlink_include_path} SOURCES components/Telemetry_TX/src/Telemetry_TX.c)
+DeclareCAmkESComponent(
+    Pixhawk_RX
+    INCLUDES include
+    SOURCES components/Pixhawk_RX/src/Pixhawk_RX.c
+)
+
+# DeclareCAmkESComponent(
+#     Pixhawk_TX
+#     INCLUDES include
+#     SOURCES components/Pixhawk_TX/src/Pixhawk_TX.c
+# )
+
+DeclareCAmkESComponent(
+    Telemetry_RX
+    INCLUDES include
+    SOURCES components/Telemetry_RX/src/Telemetry_RX.c
+)
+
+# DeclareCAmkESComponent(
+#     Telemetry_TX
+#     INCLUDES include
+#     SOURCES components/Telemetry_TX/src/Telemetry_TX.c
+# )
+
+DeclareCAmkESComponent(
+    Decrypt
+    INCLUDES include ${mavlink_include_path} GEC/include
+    SOURCES components/Decrypt/src/Decrypt.c
+    LIBS GEC
+)
+
+DeclareCAmkESComponent(
+    Encrypt
+    INCLUDES include ${mavlink_include_path} GEC/include
+    SOURCES components/Encrypt/src/Encrypt.c
+    LIBS GEC
+)
 
 DeclareCAmkESRootserver(comm.camkes)
 GenerateCAmkESRootserver()
