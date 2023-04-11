@@ -103,6 +103,7 @@ include(${GLOBAL_COMPONENTS_PATH})
 add_subdirectory(GEC)
 
 set(mavlink_include_path "${project_dir}/mavlink/include" CACHE STRING "" FORCE)
+set(gec_include_path "GEC/include" CACHE STRING "" FORCE)
 
 DeclareCAmkESComponent(
     Pixhawk_RX
@@ -118,14 +119,14 @@ DeclareCAmkESComponent(
 
 DeclareCAmkESComponent(
     Decrypt
-    INCLUDES include ${mavlink_include_path} GEC/include
+    INCLUDES include ${mavlink_include_path} ${gec_include_path}
     SOURCES components/Decrypt/src/Decrypt.c
     LIBS GEC
 )
 
 DeclareCAmkESComponent(
     Encrypt
-    INCLUDES include ${mavlink_include_path} GEC/include
+    INCLUDES include ${mavlink_include_path} ${gec_include_path}
     SOURCES components/Encrypt/src/Encrypt.c
     LIBS GEC
 )

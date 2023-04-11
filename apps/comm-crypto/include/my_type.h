@@ -35,7 +35,7 @@ typedef struct MAVLink_msg_frame {
 typedef struct CipherTextFrame {
     uint8_t magic;
     uint8_t tag;
-    uint8_t ct[GEC_CT_LEN];
+    uint8_t ciphertext[GEC_CT_LEN];
 } CipherTextFrame_t;
 
 #endif

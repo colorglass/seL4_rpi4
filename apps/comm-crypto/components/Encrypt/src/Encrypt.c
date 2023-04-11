@@ -14,7 +14,13 @@ static ps_chardevice_t *serial = NULL;
 static mavlink_message_t mavlink_message_rx_buffer;
 static mavlink_status_t mavlink_status;
 
+static struct gec_privkey privkey;
+static struct gec_pubkey pubkey;
+static struct gec_sym_key symkey_chan1;
+static struct gec_sym_key symkey_chan2;
+
 static CipherTextFrame_t ct_frame;
+
 
 static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
                                      mavlink_status_t *r_mavlink_status) {
@@ -60,7 +66,7 @@ void pre_init() {
 
   serial = ps_cdev_init(TELEMETRY_PORT_NUMBER, &io_ops, &serial_device);
   if (serial == NULL) {
-    ZF_LOGE("Failed to initialise char device");
+    ZF_LOGF("Failed to initialise char device");
   }
 
   LOG_ERROR("Out pre_init");
@@ -77,13 +83,13 @@ int run(void) {
     ring_buffer_acquire();
     tail = ringbuffer->tail;
     ring_buffer_acquire();
-    if (head != tail) {
+    while (head != tail) {
       handle_char(ringbuffer->buffer[head]);
       ring_buffer_acquire();
       head = (head + 1) % RING_BUFFER_SIZE;
-      ringbuffer->head = head;
-      ring_buffer_release();
     }
+    ringbuffer->head = head;
+    ring_buffer_release();
   }
 
   LOG_ERROR("Out run");
