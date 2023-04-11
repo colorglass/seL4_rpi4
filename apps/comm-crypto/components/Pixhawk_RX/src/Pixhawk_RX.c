@@ -25,6 +25,8 @@ void pre_init() {
   ring_buffer_release();
   rb->tail = 0;
   ring_buffer_release();
+
+  LOG_ERROR("Out pre_init");
 }
 
 int run(void) {
@@ -44,5 +46,7 @@ int run(void) {
     rb->tail = tail;
     ring_buffer_release();
   }
+
+  LOG_ERROR("Out run");
   return 0;
 }

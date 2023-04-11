@@ -15,8 +15,6 @@ static ps_chardevice_t *serial = NULL;
 static mavlink_message_t mavlink_message_rx_buffer;
 static mavlink_status_t mavlink_status;
 
-static CipherTextFrame_t ct_frame;
-
 static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
                                      mavlink_status_t *r_mavlink_status) {
   uint8_t msg_received =
@@ -54,6 +52,7 @@ static void handle_char(uint8_t c) {
 
 void pre_init() {
   LOG_ERROR("In pre_init");
+
   int error;
   error = camkes_io_ops(&io_ops);
   ZF_LOGF_IF(error, "Failed to initialise IO ops");
@@ -61,9 +60,8 @@ void pre_init() {
   serial = ps_cdev_init(UART_PORT_NUMBER, &io_ops, &serial_device);
   if (serial == NULL) {
     ZF_LOGE("Failed to initialise char device");
-  } else {
-    ZF_LOGI("Initialised char device");
   }
+
   LOG_ERROR("Out pre_init");
 }
 
@@ -72,6 +70,8 @@ int run(void) {
 
   ring_buffer_t *ringbuffer = (ring_buffer_t *)ring_buffer;
   uint32_t head, tail;
+
+  CipherTextFrame_t ct_frame;
 
   while (1) {
     head = ringbuffer->head;

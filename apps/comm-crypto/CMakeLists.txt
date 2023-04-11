@@ -110,23 +110,11 @@ DeclareCAmkESComponent(
     SOURCES components/Pixhawk_RX/src/Pixhawk_RX.c
 )
 
-# DeclareCAmkESComponent(
-#     Pixhawk_TX
-#     INCLUDES include
-#     SOURCES components/Pixhawk_TX/src/Pixhawk_TX.c
-# )
-
 DeclareCAmkESComponent(
     Telemetry_RX
     INCLUDES include
     SOURCES components/Telemetry_RX/src/Telemetry_RX.c
 )
-
-# DeclareCAmkESComponent(
-#     Telemetry_TX
-#     INCLUDES include
-#     SOURCES components/Telemetry_TX/src/Telemetry_TX.c
-# )
 
 DeclareCAmkESComponent(
     Decrypt

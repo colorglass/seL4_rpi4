@@ -53,6 +53,7 @@ static void handle_char(uint8_t c) {
 
 void pre_init() {
   LOG_ERROR("In pre_init");
+
   int error;
   error = camkes_io_ops(&io_ops);
   ZF_LOGF_IF(error, "Failed to initialise IO ops");
@@ -60,9 +61,8 @@ void pre_init() {
   serial = ps_cdev_init(TELEMETRY_PORT_NUMBER, &io_ops, &serial_device);
   if (serial == NULL) {
     ZF_LOGE("Failed to initialise char device");
-  } else {
-    ZF_LOGI("Initialised char device");
   }
+
   LOG_ERROR("Out pre_init");
 }
 

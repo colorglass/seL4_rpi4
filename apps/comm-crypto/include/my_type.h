@@ -31,6 +31,7 @@ typedef struct MAVLink_msg_frame {
  */
 #define GEC_CIPHERTEXT_FRAME_MAGIC 0x7e
 #define GEC_CIPHERTEXT_FRAME_TAG 0
+
 typedef struct CipherTextFrame {
     uint8_t magic;
     uint8_t tag;

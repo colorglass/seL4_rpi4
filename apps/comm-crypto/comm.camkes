@@ -13,42 +13,28 @@ import "components/Encrypt/Encrypt.camkes";
 assembly {
     composition {
         component Pixhawk_RX pixhawk_rx;
-        // component Pixhawk_TX pixhawk_tx;
         component Telemetry_RX telem_rx;
-        // component Telemetry_TX telem_tx;
         component Decrypt decrypt;
         component Encrypt encrypt;
 
         connection seL4SharedData   dataport_pixhawk_to_telem       (from pixhawk_rx.ring_buffer,   to encrypt.ring_buffer);
         connection seL4SharedData   dataport_telem_to_decrypt       (from telem_rx.ring_buffer,     to decrypt.ring_buffer);
-
-        // connection seL4SharedData   dataport_decrypt_to_pixhawk     (from decrypt.to_pixhawk,       to pixhawk_tx.from_decrypt);
-        // connection seL4Notification event_decrypt_to_pixhawk        (from decrypt.data_ready,       to pixhawk_tx.data_ready);
-        // connection seL4Notification event_pixhawk_to_decrypt        (from pixhawk_tx.data_ack,      to decrypt.data_ack);
     }
 
     configuration {
         pixhawk_rx.affinity = 0;
         telem_rx.affinity   = 1;
-        // pixhawk_tx.affinity = 2;
-        // telem_tx.affinity   = 2;
         decrypt.affinity    = 2;
         encrypt.affinity    = 3;
 
         pixhawk_rx.priority = HIGHEST_PRIORITY;
-        // pixhawk_tx.priority = HIGHEST_PRIORITY;
         telem_rx.priority   = HIGHEST_PRIORITY;
-        // telem_tx.priority   = HIGHEST_PRIORITY;
         decrypt.priority    = HIGHEST_PRIORITY;
         encrypt.priority    = HIGHEST_PRIORITY;
 
         pixhawk_rx.ring_buffer_access   = "RW";
         telem_rx.ring_buffer_access     = "RW";
-        // telem_tx.ring_buffer_access     = "RW";
         decrypt.ring_buffer_access      = "RW";
         encrypt.ring_buffer_access      = "RW";
-
-        // decrypt.to_pixhawk_access       = "W";
-        // pixhawk_tx.from_decrypt_access  = "R";
     }
 }
