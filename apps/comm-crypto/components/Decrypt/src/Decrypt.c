@@ -26,7 +26,6 @@ static uint8_t key_material[] = {
 static struct gec_sym_key symkey_chan1;
 static struct gec_sym_key symkey_chan2;
 
-static CipherTextFrame_t ct_frame;
 
 static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
                                      mavlink_status_t *r_mavlink_status) {
@@ -119,20 +118,20 @@ static inline void read_ringbuffer(void *buf, uint32_t len) {
   uint32_t head, tail;
   uint8_t *read_buf = (uint8_t *)buf;
 
+  head = ringbuffer->head;
+  ring_buffer_acquire();
   for (uint32_t i = 0; i < len;) {
-    head = ringbuffer->head;
-    ring_buffer_acquire();
     tail = ringbuffer->tail;
     ring_buffer_acquire();
     while (i < len && head != tail) {
       read_buf[i++] = ringbuffer->buffer[head];
       ring_buffer_acquire();
-      LOG_ERROR("CHAR: 0x%02X", read_buf[i-1]);
+      // LOG_ERROR("CHAR: 0x%02X", read_buf[i-1]);
       head = (head + 1) % RING_BUFFER_SIZE;
     }
-    ringbuffer->head = head;
-    ring_buffer_release();
   }
+  ringbuffer->head = head;
+  ring_buffer_release();
 }
 
 int run(void) {

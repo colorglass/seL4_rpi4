@@ -9,6 +9,7 @@
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #define GEC_CT_FRAME_LEN (GEC_CT_LEN + 2)
 
@@ -16,6 +17,9 @@ struct Person {
   struct gec_sym_key symkey_chan1;
   struct gec_sym_key symkey_chan2;
 };
+
+struct Person P1;
+int fd;
 
 uint8_t key_material[] = {
     0xCB, 0x28, 0x4A, 0xD9, 0x1E, 0x85, 0x78, 0xB1, 0x77, 0x6E, 0x9B, 0x98,
@@ -37,8 +41,95 @@ void print_ct(uint8_t ct[GEC_CT_LEN]) {
   puts("====================================");
 }
 
+void *send(void *args) {
+  mavlink_message_t msg;
+  mavlink_heartbeat_t hb;
+  hb.custom_mode = 0;
+  hb.type = MAV_TYPE_QUADROTOR;
+  hb.system_status = 0;
+  hb.mavlink_version = 3;
+
+  uint8_t buf[GEC_PT_LEN];
+
+  uint8_t ct_frame[GEC_CT_FRAME_LEN];
+  ct_frame[0] = 0x7e;
+  ct_frame[1] = 0;
+
+  uint8_t ct1[GEC_CT_LEN];
+
+  const uint32_t loop_count = 16;
+
+  for (uint32_t i = 0; i < loop_count; i++) {
+    mavlink_msg_heartbeat_encode(255, 0, &msg, &hb);
+    memset(buf, 0, sizeof(buf));
+    mavlink_msg_to_send_buffer(buf, &msg);
+
+    if (gec_encrypt(&P1.symkey_chan1, buf, ct1) != GEC_SUCCESS) {
+      puts("Encrypt failed");
+    } else {
+      puts("Encrypt success");
+    }
+
+    print_ct(ct1);
+
+    memcpy(ct_frame + 2, ct1, GEC_CT_LEN);
+
+    uint32_t write_len = write(fd, ct_frame, GEC_CT_FRAME_LEN);
+    if (write_len != GEC_CT_FRAME_LEN) {
+      puts("Write not completed");
+    }
+    tcdrain(fd);
+
+    usleep(1000000);
+  }
+  return NULL;
+}
+
+void *receive(void *args) {
+  mavlink_message_t msg;
+  mavlink_status_t status;
+  int result;
+
+  uint8_t ct_frame[GEC_CT_FRAME_LEN];
+  int len;
+  uint8_t buf[GEC_PT_LEN];
+
+  while (1) {
+    len = read(fd, ct_frame, GEC_CT_FRAME_LEN);
+    if (len != GEC_CT_FRAME_LEN) {
+      printf("Failed to read. Read len: %d\n", len);
+    }
+
+    if (ct_frame[0] != 0x7e) {
+      printf("MAGIC error: 0x%02X\n", ct_frame[0]);
+      continue;
+    }
+
+    if (ct_frame[1] != 0) {
+      printf("TAG error: 0x%02X\n", ct_frame[1]);
+      continue;
+    }
+
+    if (gec_decrypt(&P1.symkey_chan2, ct_frame + 2, buf)) {
+      puts("Decrypt failed");
+      continue;
+    }
+
+    for (int i = 0; i < GEC_PT_LEN; i++) {
+      result = mavlink_parse_char(0, buf[i], &msg, &status);
+      if (result) {
+        printf("Message: [SEQ]: %d, [MSGID]: %d, [SYSID]: %d, [COMPID]: %d",
+               msg.seq, msg.msgid, msg.sysid, msg.compid);
+        break;
+      }
+    }
+  }
+
+  return NULL;
+}
+
 int main() {
-  int fd = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_SYNC);
+  fd = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_SYNC);
   if (fd < 0) {
     puts("Error opening serial port");
     return 1;
@@ -62,125 +153,45 @@ int main() {
   config.c_oflag &= ~ONOEOT;
 #endif
 
-// No line processing:
-	// echo off, echo newline off, canonical mode off,
-	// extended input processing off, signal chars off
-	config.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN | ISIG);
+  // No line processing:
+  // echo off, echo newline off, canonical mode off,
+  // extended input processing off, signal chars off
+  config.c_lflag &= ~(ECHO | ECHONL | ICANON | IEXTEN | ISIG);
 
-	// Turn off character processing
-	// clear current char size mask, no parity checking,
-	// no output processing, force 8 bit input
-	config.c_cflag &= ~(CSIZE | PARENB);
-	config.c_cflag |= CS8;
+  // Turn off character processing
+  // clear current char size mask, no parity checking,
+  // no output processing, force 8 bit input
+  config.c_cflag &= ~(CSIZE | PARENB);
+  config.c_cflag |= CS8;
 
-	// One input byte is enough to return from read()
-	// Inter-character timer off
-	config.c_cc[VMIN]  = 1;
-	config.c_cc[VTIME] = 10; // was 0
+  // One input byte is enough to return from read()
+  // Inter-character timer off
+  config.c_cc[VMIN] = 1;
+  config.c_cc[VTIME] = 10; // was 0
 
-  if (cfsetispeed(&config, B57600) < 0 || cfsetospeed(&config, B57600) < 0)
-			{
-				printf("\nERROR: Could not set desired baud rate of %d Baud\n", 57600);
-			}
-      if(tcsetattr(fd, TCSAFLUSH, &config) < 0)
-	{
-		printf("\nERROR: could not set configuration of fd %d\n", fd);
-	}
-
-  struct Person P1, P2;
-
-  mavlink_message_t msg;
-  msg.magic = 0xfe;
-  msg.len = 9;
-  msg.incompat_flags = 0;
-  msg.compat_flags = 0;
-  msg.seq = 233;
-  msg.sysid = 255;
-  msg.compid = 0;
-  msg.msgid = 0;
-  memset(&msg.payload64, 0, sizeof(msg.payload64));
-  memset(&msg.ck, 0, sizeof(msg.ck));
-  memset(&msg.signature, 0, sizeof(msg.signature));
-
-  uint8_t buf[GEC_PT_LEN];
-  memset(buf, 0, sizeof(buf));
-  uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
-
-  /*
-   * Key Exchange complete
-   */
+  if (cfsetispeed(&config, B57600) < 0 || cfsetospeed(&config, B57600) < 0) {
+    printf("\nERROR: Could not set desired baud rate of %d Baud\n", 57600);
+  }
+  if (tcsetattr(fd, TCSAFLUSH, &config) < 0) {
+    printf("\nERROR: could not set configuration of fd %d\n", fd);
+  }
 
   gec_key_material_to_2_channels(&P1.symkey_chan1, &P1.symkey_chan2,
                                  key_material);
-  gec_key_material_to_2_channels(&P2.symkey_chan1, &P2.symkey_chan2,
-                                 key_material);
-  if (!memcmp(&P1.symkey_chan1, &P2.symkey_chan1, sizeof(struct gec_sym_key)) &&
-      !memcmp(&P1.symkey_chan2, &P2.symkey_chan2, sizeof(struct gec_sym_key))) {
-    puts("GEC symkey correct!");
-  } else {
-    puts("GEC symkey correct!");
+
+  int err;
+  int t1, t2;
+  err = pthread_create(&t1, NULL, &send, NULL);
+  if (err) {
+    puts("pthread_create failed");
+  }
+  err = pthread_create(&t2, NULL, &send, NULL);
+  if (err) {
+    puts("pthread_create failed");
   }
 
-  /******************************************************************/
-  /*                    Encrypt/Decrypt test                        */
-
-  /**
-   * Channel 1 Encrypt/Decrypt test
-   */
-
-  puts("====================================");
-  puts("Channel 1 Encrypt/Decrypt test");
-  // uint8_t pt1[GEC_PT_LEN];
-  uint8_t ct1[GEC_CT_LEN];
-  // uint8_t pt1_new[GEC_PT_LEN];
-  if (gec_encrypt(&P1.symkey_chan1, buf, ct1) != GEC_SUCCESS) {
-    puts("Encrypt failed");
-  } else {
-    puts("Encrypt success");
-  }
-
-  print_ct(ct1);
-
-  // if (gec_decrypt(&P2.symkey_chan1, ct1, pt1_new) != GEC_SUCCESS) {
-  //   puts("Decrypt failed");
-  // } else {
-  //   puts("Decrypt success");
-  // }
-
-  // if (memcmp(buf, pt1_new, GEC_PT_LEN)) {
-  //   puts("Decrypted message wrong");
-  // } else {
-  //   puts("Decrypted message correct");
-  // }
-  // puts("====================================");
-
-  uint8_t ct_frame[GEC_CT_FRAME_LEN];
-  ct_frame[0] = 0x7e;
-  ct_frame[1] = 0;
-  memcpy(ct_frame + 2, ct1, GEC_CT_LEN);
-
-  uint32_t write_len = write(fd, ct_frame, GEC_CT_FRAME_LEN);
-  if (write_len != GEC_CT_FRAME_LEN) {
-    puts("Write not completed");
-  }
-  tcdrain(fd);
-
-
-  if (gec_encrypt(&P1.symkey_chan1, buf, ct1) != GEC_SUCCESS) {
-    puts("Encrypt failed");
-  } else {
-    puts("Encrypt success");
-  }
-
-  print_ct(ct1);
-
-  memcpy(ct_frame + 2, ct1, GEC_CT_LEN);
-
-  write_len = write(fd, ct_frame, GEC_CT_FRAME_LEN);
-  if (write_len != GEC_CT_FRAME_LEN) {
-    puts("Write not completed");
-  }
-  tcdrain(fd);
+  pthread_join(t1, NULL);
+  pthread_join(t2, NULL);
 
   /**
    * Channel 2 Encrypt/Decrypt test

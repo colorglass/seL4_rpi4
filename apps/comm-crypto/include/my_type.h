@@ -9,7 +9,7 @@
 #define UART_PORT_NUMBER        PS_SERIAL5
 
 
-#define RING_BUFFER_SIZE 2048
+#define RING_BUFFER_SIZE (2048)
 typedef struct ring_buffer {
     uint8_t buffer[RING_BUFFER_SIZE];
     uint32_t head;
