@@ -122,7 +122,7 @@ int GEC_FN(gec_encrypt)(struct gec_sym_key *k, const uint8_t pt[GEC_PT_LEN], uin
     } else {
         int gcm_ret;
 
-        *(uint32_t*) ct = 0; // id = 0
+        // *(uint32_t*) ct = 0; // id = 0
 
         k->ctr++;
         _write_word32_be(iv, k->ctr);
