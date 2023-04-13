@@ -14,6 +14,7 @@ list(
         ${project_dir}/tools/seL4/cmake-tool/helpers
         ${project_dir}/tools/seL4/elfloader-tool
         ${project_dir}/tools/camkes
+        ${project_dir}/GEC
         ${project_modules}
 )
 # set(POLLY_DIR ${project_dir}/tools/polly CACHE INTERNAL "")
@@ -100,20 +101,22 @@ endif()
 include(${GLOBAL_COMPONENTS_PATH})
 
 # GEC crypto library
-add_subdirectory(GEC)
+find_package(GEC REQUIRED)
+GEC_import_library()
 
+message(STATUS "GEC_DIR: ${GEC_DIR}")
 set(mavlink_include_path "${project_dir}/mavlink/include" CACHE STRING "" FORCE)
-set(gec_include_path "GEC/include" CACHE STRING "" FORCE)
+set(gec_include_path "${GEC_DIR}/include" CACHE STRING "" FORCE)
 
 DeclareCAmkESComponent(
     Pixhawk_RX
-    INCLUDES include
+    INCLUDES include ${gec_include_path}
     SOURCES components/Pixhawk_RX/src/Pixhawk_RX.c
 )
 
 DeclareCAmkESComponent(
     Telemetry_RX
-    INCLUDES include
+    INCLUDES include ${gec_include_path}
     SOURCES components/Telemetry_RX/src/Telemetry_RX.c
 )
 

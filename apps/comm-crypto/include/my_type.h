@@ -2,7 +2,7 @@
 #define __MY_TYPE_H__
 
 #include <stdint.h>
-#include "../GEC/include/gec.h"
+#include "gec.h"
 
 
 #define TELEMETRY_PORT_NUMBER   PS_SERIAL3

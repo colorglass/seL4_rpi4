@@ -67,7 +67,7 @@ sha512_STORE64_BE(uint8_t *p, uint64_t v) {
 	p[7] = (uint8_t)(v      );
 }
 
-#define Ch(x,y,z)  (z ^ (x & (y ^ z)))
+#define ED25519_Ch(x,y,z)  (z ^ (x & (y ^ z)))
 #define ED25519_Maj(x,y,z) (((x | y) & z) | (x & y))
 #define S0(x)      (sha512_ROTR64(x, 28) ^ sha512_ROTR64(x, 34) ^ sha512_ROTR64(x, 39))
 #define S1(x)      (sha512_ROTR64(x, 14) ^ sha512_ROTR64(x, 18) ^ sha512_ROTR64(x, 41))
@@ -77,7 +77,7 @@ sha512_STORE64_BE(uint8_t *p, uint64_t v) {
 #define W1(i)      (G1(w[i - 2]) + w[i - 7] + G0(w[i - 15]) + w[i - 16])
 #define STEP(i) \
 	t1 = S0(r[0]) + ED25519_Maj(r[0], r[1], r[2]); \
-	t0 = r[7] + S1(r[4]) + Ch(r[4], r[5], r[6]) + sha512_constants[i] + w[i]; \
+	t0 = r[7] + S1(r[4]) + ED25519_Ch(r[4], r[5], r[6]) + sha512_constants[i] + w[i]; \
 	r[7] = r[6]; \
 	r[6] = r[5]; \
 	r[5] = r[4]; \
