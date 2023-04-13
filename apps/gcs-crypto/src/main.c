@@ -4,12 +4,14 @@
 #include "mavlink/v2.0/mavlink_helpers.h"
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
-#include <pthread.h>
 
 #define GEC_CT_FRAME_LEN (GEC_CT_LEN + 2)
 
@@ -20,6 +22,8 @@ struct Person {
 
 struct Person P1;
 int fd;
+int t1, t2;
+int time_to_exit = 0;
 
 uint8_t key_material[] = {
     0xCB, 0x28, 0x4A, 0xD9, 0x1E, 0x85, 0x78, 0xB1, 0x77, 0x6E, 0x9B, 0x98,
@@ -55,24 +59,24 @@ void *send(void *args) {
   ct_frame[0] = 0x7e;
   ct_frame[1] = 0;
 
-  uint8_t ct1[GEC_CT_LEN];
+  // uint8_t ct1[GEC_CT_LEN];
 
-  const uint32_t loop_count = 16;
+  // const uint32_t loop_count = 16;
 
-  for (uint32_t i = 0; i < loop_count; i++) {
+  while (!time_to_exit) {
     mavlink_msg_heartbeat_encode(255, 0, &msg, &hb);
     memset(buf, 0, sizeof(buf));
     mavlink_msg_to_send_buffer(buf, &msg);
 
-    if (gec_encrypt(&P1.symkey_chan1, buf, ct1) != GEC_SUCCESS) {
+    if (gec_encrypt(&P1.symkey_chan1, buf, ct_frame + 2) != GEC_SUCCESS) {
       puts("Encrypt failed");
     } else {
       puts("Encrypt success");
     }
 
-    print_ct(ct1);
+    // print_ct(ct1);
 
-    memcpy(ct_frame + 2, ct1, GEC_CT_LEN);
+    // memcpy(ct_frame + 2, ct1, GEC_CT_LEN);
 
     uint32_t write_len = write(fd, ct_frame, GEC_CT_FRAME_LEN);
     if (write_len != GEC_CT_FRAME_LEN) {
@@ -80,7 +84,7 @@ void *send(void *args) {
     }
     tcdrain(fd);
 
-    usleep(1000000);
+    sleep(1);
   }
   return NULL;
 }
@@ -94,10 +98,29 @@ void *receive(void *args) {
   int len;
   uint8_t buf[GEC_PT_LEN];
 
-  while (1) {
-    len = read(fd, ct_frame, GEC_CT_FRAME_LEN);
-    if (len != GEC_CT_FRAME_LEN) {
-      printf("Failed to read. Read len: %d\n", len);
+  while (!time_to_exit) {
+    while (1) {
+      ct_frame[0] = ct_frame[1] = 0xff;
+      len = read(fd, ct_frame, 2);
+      if (len == 0) {
+        continue;
+      } else if (len == 1 && ct_frame[0] == 0x7e) {
+        read(fd, ct_frame + 1, 1);
+      }
+      if (ct_frame[0] == 0x7e && ct_frame[1] == 0) {
+        break;
+      }
+    }
+
+    for (int i = 0; i < GEC_CT_LEN;) {
+      int read_len;
+      if (GEC_CT_LEN - i >= 64) {
+        read_len = 64;
+      } else {
+        read_len = GEC_CT_LEN - i;
+      }
+      len = read(fd, ct_frame + 2 + i, read_len);
+      i += len;
     }
 
     if (ct_frame[0] != 0x7e) {
@@ -118,7 +141,7 @@ void *receive(void *args) {
     for (int i = 0; i < GEC_PT_LEN; i++) {
       result = mavlink_parse_char(0, buf[i], &msg, &status);
       if (result) {
-        printf("Message: [SEQ]: %d, [MSGID]: %d, [SYSID]: %d, [COMPID]: %d",
+        printf("Message: [SEQ]: %d, [MSGID]: %d, [SYSID]: %d, [COMPID]: %d\n",
                msg.seq, msg.msgid, msg.sysid, msg.compid);
         break;
       }
@@ -126,6 +149,11 @@ void *receive(void *args) {
   }
 
   return NULL;
+}
+
+void sig_handler(int sig) {
+  pthread_join(t1, NULL);
+  pthread_join(t2, NULL);
 }
 
 int main() {
@@ -166,8 +194,9 @@ int main() {
 
   // One input byte is enough to return from read()
   // Inter-character timer off
-  config.c_cc[VMIN] = 1;
-  config.c_cc[VTIME] = 10; // was 0
+  config.c_cc[VMIN] = 64;
+  // config.c_cc[VTIME] = 10; // was 0
+  config.c_cc[VTIME] = 0;
 
   if (cfsetispeed(&config, B57600) < 0 || cfsetospeed(&config, B57600) < 0) {
     printf("\nERROR: Could not set desired baud rate of %d Baud\n", 57600);
@@ -179,19 +208,20 @@ int main() {
   gec_key_material_to_2_channels(&P1.symkey_chan1, &P1.symkey_chan2,
                                  key_material);
 
+  signal(SIGINT, sig_handler);
+
   int err;
-  int t1, t2;
   err = pthread_create(&t1, NULL, &send, NULL);
   if (err) {
     puts("pthread_create failed");
   }
-  err = pthread_create(&t2, NULL, &send, NULL);
+  err = pthread_create(&t2, NULL, &receive, NULL);
   if (err) {
     puts("pthread_create failed");
   }
 
-  pthread_join(t1, NULL);
-  pthread_join(t2, NULL);
+  while (1) {
+  }
 
   /**
    * Channel 2 Encrypt/Decrypt test

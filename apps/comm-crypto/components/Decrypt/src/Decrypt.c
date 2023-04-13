@@ -15,8 +15,6 @@ static ps_chardevice_t *serial = NULL;
 static mavlink_message_t mavlink_message_rx_buffer;
 static mavlink_status_t mavlink_status;
 
-// static struct gec_privkey privkey;
-// static struct gec_pubkey pubkey;
 static uint8_t key_material[] = {
     0xCB, 0x28, 0x4A, 0xD9, 0x1E, 0x85, 0x78, 0xB1, 0x77, 0x6E, 0x9B, 0x98,
     0x32, 0xEF, 0x11, 0xB0, 0xBC, 0xA8, 0xCF, 0xD6, 0x29, 0x98, 0xDA, 0x15,
@@ -24,8 +22,7 @@ static uint8_t key_material[] = {
     0xCC, 0xED, 0xFE, 0xF7, 0x76, 0xF7, 0xC7, 0x75, 0x0C, 0x53, 0xA9, 0xE5,
 };
 static struct gec_sym_key symkey_chan1;
-static struct gec_sym_key symkey_chan2;
-
+// static struct gec_sym_key symkey_chan2;
 
 static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
                                      mavlink_status_t *r_mavlink_status) {
@@ -74,7 +71,8 @@ void pre_init() {
     ZF_LOGF("Failed to initialise char device");
   }
 
-  gec_key_material_to_2_channels(&symkey_chan1, &symkey_chan2, key_material);
+  // gec_key_material_to_2_channels(&symkey_chan1, &symkey_chan2, key_material);
+  gec_init_sym_key_conf_auth(&symkey_chan1, key_material);
 
   LOG_ERROR("Out pre_init");
 }
