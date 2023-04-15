@@ -1,7 +1,7 @@
 Raspberry Pi 4B sends to and receives from GCS.
 
-Utilizing SMP.
+Manually craft heartbeat packets. Without encryption.
 
-Manually craft heartbeat packets. Use encryption.
+Utilizing SMP.
 
 Raspberry Pi [UART 3, 3DR Radio Telemetry]    <===[915 MHz wireless]===>    [3DR Radio Telemetry] Laptop.

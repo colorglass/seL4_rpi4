@@ -71,8 +71,9 @@ static void handle_char(uint8_t c) {
 
   result = my_mavlink_parse_char(c, &msg, &status);
   if (result) {
-    LOG_ERROR("Message: [SEQ]: %d, [MSGID]: %d, [SYSID]: %d, [COMPID]: %d",
-              msg.seq, msg.msgid, msg.sysid, msg.compid);
+    LOG_ERROR(
+        "Message: [SEQ]: %03d, [MSGID]: %03d, [SYSID]: %03d, [COMPID]: %03d",
+        msg.seq, msg.msgid, msg.sysid, msg.compid);
 
     // len = mavlink_msg_to_send_buffer(buf, &msg);
 
@@ -112,52 +113,19 @@ int run(void) {
   ring_buffer_t *ringbuffer = (ring_buffer_t *)ring_buffer;
   uint32_t head, tail;
 
+  head = ringbuffer->head;
+  ring_buffer_acquire();
   while (1) {
-    // head = ringbuffer->head;
-    // ring_buffer_acquire();
-    // tail = ringbuffer->tail;
-    // ring_buffer_acquire();
-    // while (head != tail) {
-    //   handle_char(ringbuffer->buffer[head]);
-    //   ring_buffer_acquire();
-    //   head = (head + 1) % RING_BUFFER_SIZE;
-    // }
-    // ringbuffer->head = head;
-    // ring_buffer_release();
-
-    CipherTextFrame_t ct_frame;
-    mavlink_message_t msg;
-    mavlink_heartbeat_t hb;
-    uint8_t buf[GEC_PT_LEN];
-    hb.custom_mode = 0;
-    hb.type = MAV_TYPE_QUADROTOR;
-    hb.system_status = 0;
-    hb.mavlink_version = 3;
-    ct_frame.magic = GEC_CIPHERTEXT_FRAME_MAGIC;
-    ct_frame.tag = GEC_CIPHERTEXT_FRAME_TAG;
-
-    mavlink_msg_heartbeat_encode(1, 0, &msg, &hb);
-    memset(buf, 0, sizeof(buf));
-    mavlink_msg_to_send_buffer(buf, &msg);
-
-    if (gec_encrypt(&symkey_chan2, buf, ct_frame.ciphertext) != GEC_SUCCESS) {
-      puts("Encrypt failed");
-    } else {
-      puts("Encrypt success");
-      if (ps_cdev_write(serial, &ct_frame, sizeof(ct_frame), NULL, NULL) !=
-          sizeof(ct_frame)) {
-        LOG_ERROR("Write not completed");
-      }
-    }
-
-    while (1) {
-      int r;
-      r = rand();
-      if (r != 0 && r % 114514233 == 0) {
-        break;
-      }
+    tail = ringbuffer->tail;
+    ring_buffer_acquire();
+    while (head != tail) {
+      handle_char(ringbuffer->buffer[head]);
+      ring_buffer_acquire();
+      head = (head + 1) % RING_BUFFER_SIZE;
     }
   }
+  ringbuffer->head = head;
+  ring_buffer_release();
 
   LOG_ERROR("Out run");
   return 0;

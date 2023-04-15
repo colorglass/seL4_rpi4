@@ -140,20 +140,25 @@ int run(void) {
     memset(buf, 0, sizeof(buf));
     mavlink_msg_to_send_buffer(buf, &msg);
 
-    if (gec_encrypt(&symkey_chan2, buf, ct_frame.ciphertext) != GEC_SUCCESS) {
-      puts("Encrypt failed");
-    } else {
-      puts("Encrypt success");
-      if (ps_cdev_write(serial, &ct_frame, sizeof(ct_frame), NULL, NULL) !=
-          sizeof(ct_frame)) {
-        LOG_ERROR("Write not completed");
-      }
+    // if (gec_encrypt(&symkey_chan2, buf, ct_frame.ciphertext) != GEC_SUCCESS)
+    // {
+    //   puts("Encrypt failed");
+    // } else {
+    //   puts("Encrypt success");
+    //   if (ps_cdev_write(serial, &ct_frame, sizeof(ct_frame), NULL, NULL) !=
+    //       sizeof(ct_frame)) {
+    //     LOG_ERROR("Write not completed");
+    //   }
+    // }
+
+    if (ps_cdev_write(serial, &buf, sizeof(buf), NULL, NULL) != sizeof(buf)) {
+      LOG_ERROR("Write not completed");
     }
 
     while (1) {
       int r;
       r = rand();
-      if (r != 0 && r % 114514233 == 0) {
+      if (r != 0 && r % 114514 == 0) {
         break;
       }
     }
