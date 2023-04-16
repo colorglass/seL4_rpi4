@@ -153,7 +153,7 @@ int run(void) {
     while (1) {
       int r;
       r = rand();
-      if (r != 0 && r % 114514233 == 0) {
+      if (r != 0 && r % 114514 == 0) {
         break;
       }
     }
