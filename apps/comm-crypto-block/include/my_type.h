@@ -19,6 +19,9 @@ typedef struct ring_buffer {
 } ring_buffer_t;
 
 
+#define MAVLINK_MAX_FRAME_LEN 280
+
+
 /**
  * GEC related
  */

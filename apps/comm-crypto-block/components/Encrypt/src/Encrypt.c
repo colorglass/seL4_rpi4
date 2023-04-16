@@ -118,7 +118,8 @@ int run(void) {
   CipherTextFrame_t ct_frame;
   mavlink_message_t msg;
   mavlink_heartbeat_t hb;
-  uint8_t buf[GEC_PT_LEN];
+  uint8_t buf[MAVLINK_MAX_FRAME_LEN];
+  int len;
 
   hb.custom_mode = 0;
   hb.type = MAV_TYPE_QUADROTOR;
@@ -130,9 +131,9 @@ int run(void) {
   while (1) {
     mavlink_msg_heartbeat_encode(1, 0, &msg, &hb);
     memset(buf, 0, sizeof(buf));
-    mavlink_msg_to_send_buffer(buf, &msg);
+    len = mavlink_msg_to_send_buffer(buf, &msg);
 
-    for (int i = 0; i < sizeof(buf); i++) {
+    for (int i = 0; i < len; i++) {
       enqueue(&queue, buf[i]);
     }
 
