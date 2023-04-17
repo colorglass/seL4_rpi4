@@ -110,4 +110,77 @@ typedef struct _queue {
     } \
 }
 
+
+/**
+ * Deque
+ */
+#define MAX_DEQUE_SIZE 4096
+typedef struct _deque {
+    uint8_t raw_queue[MAX_DEQUE_SIZE];
+    uint32_t head;
+    uint32_t tail;
+    uint32_t size;
+} deque_t;
+
+#define deque_init(q) \
+{ \
+    memset((q)->raw_queue, -1, MAX_DEQUE_SIZE); \
+    (q)->head = (q)->tail = (q)->size = 0; \
+}
+
+#define deque_empty(q) \
+({ \
+    (q)->size == 0; \
+})
+
+#define deque_full(q) \
+({ \
+    (q)->size == MAX_DEQUE_SIZE; \
+})
+
+#define deque_pop_front(q, ret) \
+({ \
+    int _ret; \
+    if (deque_empty(q)) { \
+        LOG_ERROR("Cannot pop deque"); \
+        _ret = -1; \
+    } else { \
+        *(ret) = (q)->raw_queue[(q)->head]; \
+        (q)->head = ((q)->head + 1) % MAX_DEQUE_SIZE; \
+        (q)->size--; \
+        _ret = 0; \
+    } \
+    _ret; \
+})
+
+#define deque_push_back(q, x) \
+({ \
+    int _ret; \
+    if (deque_full(q)) { \
+        LOG_ERROR("Cannot push back deque"); \
+        _ret = -1; \
+    } else { \
+        (q)->raw_queue[(q)->tail] = x; \
+        (q)->tail = ((q)->tail + 1) % MAX_DEQUE_SIZE; \
+        (q)->size++; \
+        _ret = 0; \
+    } \
+    _ret; \
+})
+
+#define deque_push_front(q, x) \
+({ \
+    int _ret; \
+    if (deque_full(q)) { \
+        LOG_ERROR("Cannot push front deque"); \
+        _ret = -1; \
+    } else { \
+        uint32_t _index = ((q)->head - 1 + MAX_DEQUE_SIZE) % MAX_DEQUE_SIZE; \
+        (q)->raw_queue[_index] = x; \
+        (q)->head = ((q)->head - 1) % MAX_DEQUE_SIZE; \
+        (q)->size++; \
+    } \
+    _ret; \
+})
+
 #endif

@@ -137,9 +137,9 @@ int run(void) {
       enqueue(&queue, buf[i]);
     }
 
-    int loop = queue.size / GEC_PT_LEN;
+    uint32_t loop = queue.size / GEC_PT_LEN;
 
-    LOG_ERROR("Encrypt total messages: %d", loop);
+    LOG_ERROR("Encrypt total blocks: %d", loop);
     for (int i = 0; i < loop; i++) {
       for (int j = 0; j < GEC_PT_LEN; j++) {
         uint8_t c;
@@ -147,10 +147,9 @@ int run(void) {
         buf[j] = c;
       }
       if (gec_encrypt(&symkey_chan2, buf, ct_frame.ciphertext) != GEC_SUCCESS) {
-        LOG_ERROR("Encrypt failed");
+        LOG_ERROR("Failed to encrypt block %d", i);
       } else {
-        // puts("Encrypt success");
-        LOG_ERROR("Encrypt %d success", i + 1);
+        LOG_ERROR("Encrypted block %d", i);
         if (ps_cdev_write(serial, &ct_frame, sizeof(ct_frame), NULL, NULL) !=
             sizeof(ct_frame)) {
           LOG_ERROR("Write not completed");
@@ -159,14 +158,6 @@ int run(void) {
     }
 
     LOG_ERROR("Queue rest size: %d", queue.size);
-
-    while (1) {
-      int r;
-      r = rand();
-      if (r != 0 && r % 1145 == 0) {
-        break;
-      }
-    }
   }
 
   LOG_ERROR("Out run");

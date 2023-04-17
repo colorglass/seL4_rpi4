@@ -4,8 +4,10 @@
 #include <stdint.h>
 #include <utils/util.h>
 
+#include "gec.h"
 #include "mavlink/v2.0/common/mavlink.h"
 #include "mavlink/v2.0/mavlink_helpers.h"
+#include "mavlink/v2.0/mavlink_types.h"
 #include "my_type.h"
 
 static ps_io_ops_t io_ops;
@@ -14,6 +16,8 @@ static ps_chardevice_t *serial = NULL;
 
 static mavlink_message_t mavlink_message_rx_buffer;
 static mavlink_status_t mavlink_status;
+
+static deque_t deque;
 
 static uint8_t key_material[] = {
     0xCB, 0x28, 0x4A, 0xD9, 0x1E, 0x85, 0x78, 0xB1, 0x77, 0x6E, 0x9B, 0x98,
@@ -43,7 +47,7 @@ static void parse_char_into_msg(uint8_t c) {
   mavlink_message_t msg;
   mavlink_status_t status;
   int result;
-  uint8_t buf[MAVLINK_FRAME_LEN];
+  uint8_t buf[GEC_CT_LEN];
   uint16_t len;
 
   result = my_mavlink_parse_char(c, &msg, &status);
@@ -73,6 +77,8 @@ void pre_init() {
 
   // gec_key_material_to_2_channels(&symkey_chan1, &symkey_chan2, key_material);
   gec_init_sym_key_conf_auth(&symkey_chan1, key_material);
+
+  deque_init(&deque);
 
   LOG_ERROR("Out pre_init");
 }
@@ -136,20 +142,49 @@ int run(void) {
   LOG_ERROR("In run");
 
   CipherTextFrame_t ct_frame;
+  uint8_t pt[GEC_PT_LEN];
   mavlink_message_t msg;
-  uint8_t buf[MAVLINK_FRAME_LEN];
+  mavlink_status_t status;
+  uint8_t buf[GEC_CT_LEN];
   uint32_t len;
+  int result;
+  uint8_t c;
 
   while (1) {
     read_ringbuffer(&ct_frame, sizeof(ct_frame));
-    if (decrypt_to_msg(&ct_frame, &msg)) {
-      LOG_ERROR("Failed to decrypt message");
-      continue;
+    // if (decrypt_to_msg(&ct_frame, &msg)) {
+    //   LOG_ERROR("Failed to decrypt message");
+    //   continue;
+    // }
+
+    if (ct_frame.magic != GEC_CIPHERTEXT_FRAME_MAGIC) {
+      LOG_ERROR("MAGIC not match: 0x%02X", ct_frame.magic);
+      return 1;
+    }
+    if (ct_frame.tag != GEC_CIPHERTEXT_FRAME_TAG) {
+      LOG_ERROR("TAG not match: 0x%02X", ct_frame.tag);
+      return 1;
     }
 
-    len = mavlink_msg_to_send_buffer(buf, &msg);
-    if (ps_cdev_write(serial, buf, len, NULL, NULL) != len) {
-      LOG_ERROR("Write not completed");
+    if (gec_decrypt(&symkey_chan1, ct_frame.ciphertext, pt)) {
+      LOG_ERROR("Decrypt failed");
+    } else {
+      for (int i = 0; i < GEC_PT_LEN; i++) {
+        deque_push_back(&deque, pt[i]);
+      }
+    }
+
+    for (int i = 0; i < deque.size; i++) {
+      deque_pop_front(&deque, &c);
+      result = my_mavlink_parse_char(c, &msg, &status);
+      if (result) {
+        LOG_ERROR("Message: [SEQ]: %d, [MSGID]: %d, [SYSID]: %d, [COMPID]: %d",
+                  msg.seq, msg.msgid, msg.sysid, msg.compid);
+        len = mavlink_msg_to_send_buffer(buf, &msg);
+        if (ps_cdev_write(serial, buf, len, NULL, NULL) != len) {
+          LOG_ERROR("Write not completed");
+        }
+      }
     }
   }
 

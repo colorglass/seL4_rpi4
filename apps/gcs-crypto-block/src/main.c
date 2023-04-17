@@ -20,17 +20,82 @@ struct Person {
   struct gec_sym_key symkey_chan2;
 };
 
-#define RING_BUFFER_SIZE 8192
-struct ring_buffer {
-  uint8_t buffer[RING_BUFFER_SIZE];
-  uint32_t head;
-  uint32_t tail;
-};
+#define MAX_QUEUE_SIZE 4096
+typedef struct _queue {
+    uint8_t raw_queue[MAX_QUEUE_SIZE];
+    uint32_t head;
+    uint32_t size;
+} queue_t;
+
+#define queue_init(q) \
+    ({ \
+        memset((q)->raw_queue, -1, MAX_QUEUE_SIZE); \
+        (q)->head = 0; \
+        (q)->size = 0; \
+    })
+
+#define queue_full(q) \
+    ({ \
+        (q)->size == MAX_QUEUE_SIZE; \
+    })
+
+#define queue_empty(q) \
+    ({ \
+        !(q)->size; \
+    })
+
+#define enqueue(q, x) \
+    ({ \
+        int _ret; \
+        if (queue_full(q)) { \
+            printf("Cannot enquque"); \
+            _ret = -1; \
+        } else {\
+        uint32_t _index = ((q)->head + (q)->size) % MAX_QUEUE_SIZE; \
+        (q)->raw_queue[_index] = x; \
+        (q)->size++; \
+        _ret = 0; \
+        } \
+        _ret; \
+    })
+
+#define dequeue(q, ret) \
+    ({ \
+        int _ret; \
+        if (queue_empty(q)) { \
+            printf("Cannot dequeue"); \
+            _ret = -1; \
+        } else { \
+        *(ret) = (q)->raw_queue[(q)->head]; \
+        (q)->head = ((q)->head + 1) % MAX_QUEUE_SIZE; \
+        (q)->size--; \
+        _ret = 0; \
+        } \
+        _ret; \
+    })
+
+#define print_queue(q) \
+    ({ \
+        char _str[MAX_QUEUE_SIZE * 3 + 1]; \
+        char *_p = _str; \
+        printf("Print queue:"); \
+        uint32_t size = (q)->size; \
+        for (uint32_t h = (q)->head, i = 0; i < size; i++, h = (h+1) % MAX_QUEUE_SIZE) { \
+            sprintf(_p, "%02X ", (q)->raw_queue[h]); \
+            _p += 3; \
+        } \
+        printf("%s", _str); \
+    })
+
+#define print_serial(s) { \
+    for (int i=0; s[i]; i++) { \
+        ps_cdev_putchar(serial, s[i]); \
+    } \
+}
 
 struct Person P1;
 int fd;
 int time_to_exit = 0;
-struct ring_buffer serial_rb;
 
 uint8_t key_material[] = {
     0xCB, 0x28, 0x4A, 0xD9, 0x1E, 0x85, 0x78, 0xB1, 0x77, 0x6E, 0x9B, 0x98,
@@ -101,13 +166,13 @@ void receive(void) {
   mavlink_status_t status;
   int result;
 
-  struct ring_buffer rb;
-
   uint8_t ct_frame[GEC_CT_FRAME_LEN];
+  uint8_t ct[GEC_CT_LEN];
   uint8_t pt[GEC_PT_LEN];
   int cnt = 0;
 
-  rb.head = rb.tail = 0;
+  queue_t queue;
+  queue_init(&queue);
 
   int lost_packets = 0;
   int last_seq = -1;
@@ -123,40 +188,28 @@ void receive(void) {
           break;
         }
       }
-      // if (serial_rb.head != serial_rb.tail && serial_rb.buffer[serial_rb.head] == 0x7e) {
-      //   serial_rb.head = (serial_rb.head + 1) % RING_BUFFER_SIZE;
-      //   while (serial_rb.head == serial_rb.tail) {}
-      //   if (serial_rb.buffer[serial_rb.head] == 0) {
-      //     serial_rb.head = (serial_rb.head + 1) % RING_BUFFER_SIZE;
-      //     break;
-      //   } else {
-      //     serial_rb.head = (serial_rb.head + 1) % RING_BUFFER_SIZE;
-      //   }
-      // } else {
-      //   serial_rb.head = (serial_rb.head + 1) % RING_BUFFER_SIZE;
-      // }
     }
     while (cnt < GEC_CT_LEN) {
-      int len = read(fd, ct_frame + 2 + cnt, GEC_CT_LEN - cnt);
+      int len = read(fd, ct + cnt, GEC_CT_LEN - cnt);
       printf("    Read %d bytes\n", len);
       cnt += len;
-      // while (cnt < GEC_CT_LEN && serial_rb.head != serial_rb.tail) {
-      //   ct_frame[2 + cnt++] = serial_rb.buffer[serial_rb.head];
-      //   serial_rb.head = (serial_rb.head + 1) % RING_BUFFER_SIZE;
-      // }
     }
     puts("Got frame");
-    if (gec_decrypt(&P1.symkey_chan2, ct_frame + 2, pt)) {
+    if (gec_decrypt(&P1.symkey_chan2, ct, pt)) {
       puts("Decrypt failed");
     } else {
       for (int i=0; i<GEC_PT_LEN; i++) {
-        rb.buffer[rb.tail] = pt[i];
-        rb.tail = (rb.tail + 1) % RING_BUFFER_SIZE;
+        // rb.buffer[rb.tail] = pt[i];
+        // rb.tail = (rb.tail + 1) % RING_BUFFER_SIZE;
+        enqueue(&queue, pt[i]);
       }
     }
-    while (rb.head != rb.tail){ 
-      result = mavlink_parse_char(0, rb.buffer[rb.head], &msg, &status);
-      rb.head = (rb.head + 1) % RING_BUFFER_SIZE;
+    while (!queue_empty(&queue)){ 
+      uint8_t c;
+      dequeue(&queue, &c);
+      result = mavlink_parse_char(0, c, &msg, &status);
+      // result = mavlink_parse_char(0, rb.buffer[rb.head], &msg, &status);
+      // rb.head = (rb.head + 1) % RING_BUFFER_SIZE;
       if (result) {
         printf("Message: [SEQ]: %03d, [SYSID]: %03d, [MSGID]: %03d\n", msg.seq, msg.sysid, msg.msgid);
         all_packets += 1;
@@ -172,18 +225,18 @@ void receive(void) {
   return NULL;
 }
 
-void *serial_get(void *arg) {
-  puts("Thread started");
-  while (1) {
-    uint8_t buf[GEC_CT_FRAME_LEN];
-    int len = read(fd, buf, sizeof(buf));
-    // printf("    Read %d bytes\n", len);
-    for (int i=0; i<len; i++) {
-      serial_rb.buffer[serial_rb.tail] = buf[i];
-      serial_rb.tail = (serial_rb.tail + 1) % RING_BUFFER_SIZE;
-    }
-  }
-}
+// void *serial_get(void *arg) {
+//   puts("Thread started");
+//   while (1) {
+//     uint8_t buf[GEC_CT_FRAME_LEN];
+//     int len = read(fd, buf, sizeof(buf));
+//     // printf("    Read %d bytes\n", len);
+//     for (int i=0; i<len; i++) {
+//       serial_rb.buffer[serial_rb.tail] = buf[i];
+//       serial_rb.tail = (serial_rb.tail + 1) % RING_BUFFER_SIZE;
+//     }
+//   }
+// }
 
 int main() {
   fd = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_SYNC);
@@ -237,7 +290,7 @@ int main() {
   gec_key_material_to_2_channels(&P1.symkey_chan1, &P1.symkey_chan2,
                                  key_material);
 
-  serial_rb.head = serial_rb.tail = 0;
+  // serial_rb.head = serial_rb.tail = 0;
 
   // int t;
   // pthread_create(&t, NULL, serial_get, NULL);

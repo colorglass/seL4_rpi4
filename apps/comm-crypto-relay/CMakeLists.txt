@@ -14,7 +14,7 @@ list(
         ${project_dir}/tools/seL4/cmake-tool/helpers
         ${project_dir}/tools/seL4/elfloader-tool
         ${project_dir}/tools/camkes
-        ${project_dir}/GEC
+        ${project_dir}/GEC-block
         ${project_modules}
 )
 # set(POLLY_DIR ${project_dir}/tools/polly CACHE INTERNAL "")
