@@ -8,7 +8,7 @@ Separate MAVLink message frames into blocks.
 
 ```
 
-                                      *MAVLink message view
+                                      MAVLink message view
 
 +-------------------------+----------+-----------------------------------------------------------+
 |     MAVLINK Frame 1     | Frame 2  |                         Frame 3                           | ...
