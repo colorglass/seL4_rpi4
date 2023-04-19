@@ -335,7 +335,7 @@ static void handle_char(uint8_t c) {
 //   }
 
   if (result) {
-    LOG_ERROR("Message: [SEQ]: %d, [MSGID]: %d, [SYSID]: %d, [COMPID]: %d",
+    LOG_ERROR("Message: [SEQ]: %d, [MSGID]: 0x%06X, [SYSID]: %d, [COMPID]: %d",
               msg.seq, msg.msgid, msg.sysid, msg.compid);
 
     len = mavlink_msg_to_send_buffer(buf, &msg);

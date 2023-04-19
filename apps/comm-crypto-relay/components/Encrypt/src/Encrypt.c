@@ -6,6 +6,8 @@
 #include <utils/util.h>
 
 #include "gec.h"
+#include "mavlink/v2.0/ardupilotmega/mavlink.h"
+#include "mavlink/v2.0/checksum.h"
 #include "mavlink/v2.0/common/mavlink.h"
 #include "mavlink/v2.0/mavlink_helpers.h"
 #include "mavlink/v2.0/mavlink_types.h"
@@ -324,7 +326,7 @@ static void recalc_checksum(mavlink_message_t *msg,
   bool signing = false;
 #endif
   uint8_t signature_len = signing ? MAVLINK_SIGNATURE_BLOCK_LEN : 0;
-  uint8_t header_len = MAVLINK_CORE_HEADER_LEN + 1;
+  uint8_t header_len = mavlink1 ? 6 : MAVLINK_CORE_HEADER_LEN + 1;
 
   uint8_t buf[MAVLINK_CORE_HEADER_LEN + 1];
   buf[0] = msg->magic;
@@ -357,7 +359,7 @@ static void recalc_checksum(mavlink_message_t *msg,
 static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
                                      mavlink_status_t *r_mavlink_status) {
   uint8_t msg_received =
-      my_mavlink_frame_char_buffer(&mavlink_message_rx_buffer, &mavlink_status,
+      mavlink_frame_char_buffer(&mavlink_message_rx_buffer, &mavlink_status,
                                    c, r_message, r_mavlink_status);
   if (msg_received == MAVLINK_FRAMING_BAD_CRC) {
     LOG_ERROR("MAVLink message parse error: Bad CRC");
@@ -365,7 +367,7 @@ static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
     LOG_ERROR("MAVLink message parse error: Bad signature");
   }
 
-  recalc_checksum(r_message, r_mavlink_status);
+  // recalc_checksum(r_message, r_mavlink_status);
 
   return msg_received;
 }
@@ -401,8 +403,8 @@ static int encrypt_to_frame(const mavlink_message_t *msg) {
   ct_frame.magic = GEC_CIPHERTEXT_FRAME_MAGIC;
   ct_frame.tag = GEC_CIPHERTEXT_FRAME_TAG;
 
-  LOG_ERROR("Encrypt total blocks: %d", loop);
-  for (int i = 0; i < loop; i++) {
+  // LOG_ERROR("Encrypt total blocks: %d", loop);
+  for (uint32_t i = 0; i < loop; i++) {
     for (int j = 0; j < GEC_PT_LEN; j++) {
       uint8_t c;
       dequeue(&queue, &c);
@@ -411,7 +413,7 @@ static int encrypt_to_frame(const mavlink_message_t *msg) {
     if (gec_encrypt(&symkey_chan2, buf, ct_frame.ciphertext) != GEC_SUCCESS) {
       LOG_ERROR("Failed to encrypt block %d", i);
     } else {
-      LOG_ERROR("Encrypted block %d", i);
+      // LOG_ERROR("Encrypted block %d", i);
       if (ps_cdev_write(serial, &ct_frame, sizeof(ct_frame), NULL, NULL) !=
           sizeof(ct_frame)) {
         LOG_ERROR("Write not completed");
@@ -419,7 +421,7 @@ static int encrypt_to_frame(const mavlink_message_t *msg) {
     }
   }
 
-  LOG_ERROR("Queue rest size: %d", queue.size);
+  // LOG_ERROR("Queue rest size: %d", queue.size);
 
   return 0;
 }
@@ -433,7 +435,7 @@ static inline void handle_char(uint8_t c) {
   result = my_mavlink_parse_char(c, &msg, &status);
   if (result) {
     LOG_ERROR(
-        "Message: [SEQ]: %03d, [MSGID]: %03d, [SYSID]: %03d, [COMPID]: %03d",
+        "Message: [SEQ]: %03d, [MSGID]: 0x%06X, [SYSID]: %03d, [COMPID]: %03d",
         msg.seq, msg.msgid, msg.sysid, msg.compid);
 
     encrypt_to_frame(&msg);
