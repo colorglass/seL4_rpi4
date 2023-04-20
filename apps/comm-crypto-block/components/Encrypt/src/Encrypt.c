@@ -6,6 +6,7 @@
 #include <utils/util.h>
 
 #include "gec.h"
+#include "mavlink/v2.0/ardupilotmega/mavlink.h"
 #include "mavlink/v2.0/common/mavlink.h"
 #include "mavlink/v2.0/mavlink_helpers.h"
 #include "mavlink/v2.0/mavlink_types.h"
@@ -139,17 +140,29 @@ int run(void) {
 
     uint32_t loop = queue.size / GEC_PT_LEN;
 
-    LOG_ERROR("Encrypt total blocks: %d", loop);
+    // LOG_ERROR("Encrypt total blocks: %d", loop);
     for (int i = 0; i < loop; i++) {
       for (int j = 0; j < GEC_PT_LEN; j++) {
         uint8_t c;
         dequeue(&queue, &c);
         buf[j] = c;
       }
-      if (gec_encrypt(&symkey_chan2, buf, ct_frame.ciphertext) != GEC_SUCCESS) {
-        LOG_ERROR("Failed to encrypt block %d", i);
-      } else {
-        LOG_ERROR("Encrypted block %d", i);
+
+      uint64_t start = timer_time();
+      // if (gec_encrypt(&symkey_chan2, buf, ct_frame.ciphertext) != GEC_SUCCESS) {
+      //   LOG_ERROR("Failed to encrypt block %d", i);
+      // } else {
+      //   // LOG_ERROR("Encrypted block %d", i);
+      //   if (ps_cdev_write(serial, &ct_frame, sizeof(ct_frame), NULL, NULL) !=
+      //       sizeof(ct_frame)) {
+      //     LOG_ERROR("Write not completed");
+      //   }
+      // }
+      int result = gec_encrypt(&symkey_chan2, buf, ct_frame.ciphertext);
+      uint64_t end = timer_time();
+      // LOG_ERROR("    Encrypt time: %lu", end - start);
+
+      if (!result) {
         if (ps_cdev_write(serial, &ct_frame, sizeof(ct_frame), NULL, NULL) !=
             sizeof(ct_frame)) {
           LOG_ERROR("Write not completed");
@@ -157,7 +170,7 @@ int run(void) {
       }
     }
 
-    LOG_ERROR("Queue rest size: %d", queue.size);
+    // LOG_ERROR("Queue rest size: %d", queue.size);
   }
 
   LOG_ERROR("Out run");

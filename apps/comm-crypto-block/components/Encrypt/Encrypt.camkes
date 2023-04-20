@@ -1,8 +1,11 @@
 import "../GPIO/GPIO.camkes";
+import <Timer.idl4> ;
 
 component Encrypt {
     include "my_type.h";
     control;
+
+    uses Timer timer;
 
     dataport ring_buffer_t ring_buffer;
 

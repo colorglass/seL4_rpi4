@@ -166,9 +166,22 @@ int run(void) {
       return 1;
     }
 
-    if (gec_decrypt(&symkey_chan1, ct_frame.ciphertext, pt)) {
-      LOG_ERROR("Decrypt failed");
-    } else {
+    uint64_t start = timer_time();
+    // if (gec_decrypt(&symkey_chan1, ct_frame.ciphertext, pt)) {
+    //   LOG_ERROR("Decrypt failed");
+    // } else {
+    //   for (int i = 0; i < GEC_PT_LEN; i++) {
+    //     deque_push_back(&deque, pt[i]);
+    //   }
+    // }
+    static uint64_t avg = 0;
+    static uint64_t ctr = 0;
+    result = gec_decrypt(&symkey_chan1, ct_frame.ciphertext, pt);
+    uint64_t end = timer_time();
+    avg += end - start;
+    LOG_ERROR("    Decrypt time: %lu", avg / ++ctr);
+
+    if (!result) {
       for (int i = 0; i < GEC_PT_LEN; i++) {
         deque_push_back(&deque, pt[i]);
       }
