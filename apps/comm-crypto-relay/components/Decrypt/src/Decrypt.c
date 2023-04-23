@@ -152,10 +152,6 @@ int run(void) {
 
   while (1) {
     read_ringbuffer(&ct_frame, sizeof(ct_frame));
-    // if (decrypt_to_msg(&ct_frame, &msg)) {
-    //   LOG_ERROR("Failed to decrypt message");
-    //   continue;
-    // }
 
     if (ct_frame.magic != GEC_CIPHERTEXT_FRAME_MAGIC) {
       LOG_ERROR("MAGIC not match: 0x%02X", ct_frame.magic);

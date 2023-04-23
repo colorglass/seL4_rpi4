@@ -1,5 +1,7 @@
 #include "gec-ke.h"
 #include "gec.h"
+#include <fcntl.h>
+#include <unistd.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -84,8 +86,12 @@ void print_key_material(uint8_t *km) {
 int main() {
   struct Person P1;
   uint8_t random_data1[RANDOM_DATA_LEN];
+
+  int random_fd = open("/dev/random", O_RDONLY);
+
   for (int i = 0; i < RANDOM_DATA_LEN; i++) {
-    random_data1[i] = rand() & 0xff;
+    // random_data1[i] = rand() & 0xff;
+    read(random_fd, &random_data1[i], 1);
   }
   generate(&P1.pubkey, &P1.privkey, random_data1);
 
@@ -96,9 +102,12 @@ int main() {
   struct Person P2;
   uint8_t random_data2[RANDOM_DATA_LEN];
   for (int i = 0; i < RANDOM_DATA_LEN; i++) {
-    random_data1[i] = rand() & 0xff;
+    // random_data1[i] = rand() & 0xff;
+    read(random_fd, &random_data2[i], 1);
   }
   generate(&P2.pubkey, &P2.privkey, random_data2);
+
+  close(random_fd);
 
   puts("Party B");
   print_privkey(&P1.privkey);
