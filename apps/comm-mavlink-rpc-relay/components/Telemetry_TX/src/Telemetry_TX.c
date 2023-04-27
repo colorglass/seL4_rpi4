@@ -31,8 +31,11 @@ void serial_send__init() {
 
 }
 
-void serial_send(const uint8_t *buf, uint32_t len) {
-  ps_cdev_write(serial, buf, len, NULL, NULL);
+void serial_send(const uint8_t *buf, uint16_t len) {
+  LOG_ERROR("buf[0]: %02X, len: %u", buf[0], len);
+  if (ps_cdev_write(serial, buf, len, NULL, NULL) != len) {
+    LOG_ERROR("Write not completed");
+  }
 }
 
 int run(void) {

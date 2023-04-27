@@ -31,14 +31,14 @@ static void handle_char(uint8_t c) {
   mavlink_status_t status;
   int result = my_mavlink_parse_char(c, &msg, &status);
   uint8_t buf[300];
-  uint32_t len;
+  uint16_t len;
 
   if (result) {
     LOG_ERROR("Message: [SEQ]: %d, [MSGID]: %d, [SYSID]: %d, [COMPID]: %d",
               msg.seq, msg.msgid, msg.sysid, msg.compid);
 
     len = mavlink_msg_to_send_buffer(buf, &msg);
-    serial_send(buf, msg);
+    serial_send(buf, len);
   }
 }
 

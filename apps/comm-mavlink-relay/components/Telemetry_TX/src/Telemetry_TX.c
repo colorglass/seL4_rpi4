@@ -16,7 +16,6 @@ static ps_chardevice_t *serial = NULL;
 static mavlink_message_t mavlink_message_rx_buffer;
 static mavlink_status_t mavlink_status;
 
-
 static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
                                      mavlink_status_t *r_mavlink_status) {
   uint8_t msg_received =
@@ -30,7 +29,6 @@ static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
 
   return msg_received;
 }
-
 
 static void handle_char(uint8_t c) {
   // ZF_LOGE("%02X", c);
@@ -66,20 +64,19 @@ void pre_init() {
 int run(void) {
   ZF_LOGE("In run");
 
+  ring_buffer_t *ringbuffer = (ring_buffer_t *)ring_buffer;
+  uint32_t head, tail;
+  head = ringbuffer->head;
+  ring_buffer_acquire();
   while (1) {
-    ring_buffer_t *ringbuffer = (ring_buffer_t *)ring_buffer;
-    uint32_t head, tail;
-    head = ringbuffer->head;
-    ring_buffer_acquire();
     tail = ringbuffer->tail;
     ring_buffer_acquire();
-    if (head != tail) {
+    while (head != tail) {
       handle_char(ringbuffer->buffer[head]);
       ring_buffer_acquire();
       head = (head + 1) % sizeof(ringbuffer->buffer);
-      ringbuffer->head = head;
-      ring_buffer_release();
     }
   }
+
   return 0;
 }

@@ -12,6 +12,7 @@
 static mavlink_message_t mavlink_message_rx_buffer;
 static mavlink_status_t mavlink_status;
 
+
 static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
                                      mavlink_status_t *r_mavlink_status) {
   uint8_t msg_received =
@@ -32,7 +33,7 @@ static void handle_char(uint8_t c) {
   mavlink_status_t status;
   int result = my_mavlink_parse_char(c, &msg, &status);
   uint8_t buf[300];
-  uint32_t len;
+  uint16_t len;
 
   if (result) {
     LOG_ERROR("Message: [SEQ]: %d, [MSGID]: 0x%06X, [SYSID]: %d, [COMPID]: %d",
