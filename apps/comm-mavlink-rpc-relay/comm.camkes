@@ -1,0 +1,45 @@
+import <std_connector.camkes>;
+import <global-connectors.camkes>;
+
+import "components/UART_RX/UART_RX.camkes";
+import "components/UART_TX/UART_TX.camkes";
+import "components/Telemetry_RX/Telemetry_RX.camkes";
+import "components/Telemetry_TX/Telemetry_TX.camkes";
+import "components/Encrypt/Encrypt.camkes";
+import "components/Decrypt/Decrypt.camkes";
+
+assembly {
+    composition {
+        component UART_RX uart_rx;
+        component UART_TX uart_tx;
+        component Telemetry_RX telem_rx;
+        component Telemetry_TX telem_tx;
+        component Encrypt encrypt;
+        component Decrypt decrypt;
+
+        connection seL4SharedData conn1 (from uart_rx.ring_buffer, to encrypt.ring_buffer);
+        connection seL4SharedData conn2 (from telem_rx.ring_buffer, to decrypt.ring_buffer);
+
+        connection seL4RPCCall rpccall1 (from encrypt.send, to telem_tx.send);
+        connection seL4RPCCall rpccall2 (from decrypt.send, to uart_tx.send);
+    }
+
+    configuration {
+        uart_rx.affinity = 0;
+        uart_tx.affinity = 1;
+        telem_rx.affinity = 2;
+        telem_tx.affinity = 1;
+        encrypt.affinity = 3;
+        decrypt.affinity = 3;
+
+        uart_rx.priority = 255;
+        uart_tx.priority = 255;
+        telem_rx.priority = 255;
+        telem_tx.priority = 255;
+
+        uart_rx.ring_buffer_access = "RW";
+        encrypt.ring_buffer_access = "RW";
+        telem_rx.ring_buffer_access = "RW";
+        decrypt.ring_buffer_access = "RW";
+    }
+}

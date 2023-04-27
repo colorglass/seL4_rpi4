@@ -1,0 +1,3 @@
+procedure uart {
+    void send(refin uint8_t buf, uint32_t len);
+};

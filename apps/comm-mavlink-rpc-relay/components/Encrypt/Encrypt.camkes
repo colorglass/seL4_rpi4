@@ -1,0 +1,10 @@
+import "../../interfaces/uart.idl4";
+
+component Encrypt {
+    control;
+
+    include "my_type.h";
+    dataport ring_buffer_t ring_buffer;
+
+    uses uart serial;
+}
