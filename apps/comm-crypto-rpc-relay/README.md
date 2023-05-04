@@ -1,8 +1,8 @@
 Raspberry Pi 4B sends to and receives from GCS.
 
-Utilizing SMP.
+Utilizing SMP provided by Elf-Loader.
 
-Relay packets from/to Pixhawk to/from GCS. Use encryption.
+Relay packets from/to Pixhawk to/from GCS. Use GEC encryption from/to Raspberry Pi to/from GCS.
 
 Separate MAVLink message frames into blocks.
 

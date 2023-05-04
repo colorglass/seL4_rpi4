@@ -23,7 +23,6 @@ static uint8_t key_material[] = {
     0xCC, 0xED, 0xFE, 0xF7, 0x76, 0xF7, 0xC7, 0x75, 0x0C, 0x53, 0xA9, 0xE5,
 };
 static struct gec_sym_key symkey_chan1;
-// static struct gec_sym_key symkey_chan2;
 
 static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
                                      mavlink_status_t *r_mavlink_status) {
@@ -42,7 +41,6 @@ static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
 void pre_init() {
   LOG_ERROR("In pre_init");
 
-  // gec_key_material_to_2_channels(&symkey_chan1, &symkey_chan2, key_material);
   gec_init_sym_key_conf_auth(&symkey_chan1, key_material);
 
   queue_init(&queue);
@@ -98,7 +96,7 @@ static inline void read_ringbuffer(void *buf, uint32_t len) {
     while (i < len && head != tail) {
       read_buf[i++] = ringbuffer->buffer[head];
       ring_buffer_acquire();
-      // LOG_ERROR("CHAR: 0x%02X", read_buf[i-1]);
+
       head = (head + 1) % RING_BUFFER_SIZE;
     }
   }
@@ -143,9 +141,7 @@ int run(void) {
         LOG_ERROR("Message: [SEQ]: %d, [MSGID]: %d, [SYSID]: %d, [COMPID]: %d",
                   msg.seq, msg.msgid, msg.sysid, msg.compid);
         len = mavlink_msg_to_send_buffer(buf, &msg);
-        // if (ps_cdev_write(serial, buf, len, NULL, NULL) != len) {
-        //   LOG_ERROR("Write not completed");
-        // }
+
         serial_send(buf, len);
       }
     }

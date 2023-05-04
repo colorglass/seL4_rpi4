@@ -108,16 +108,17 @@ message(STATUS "GEC_DIR: ${GEC_DIR}")
 set(mavlink_include_path "${project_dir}/mavlink/include" CACHE STRING "" FORCE)
 set(gec_include_path "${GEC_DIR}/include" CACHE STRING "" FORCE)
 
+
 DeclareCAmkESComponent(
-    Pixhawk_RX
+    Pixhawk
     INCLUDES include ${gec_include_path}
-    SOURCES components/Pixhawk_RX/src/Pixhawk_RX.c
+    SOURCES components/Pixhawk/src/Pixhawk.c
 )
 
 DeclareCAmkESComponent(
-    Telemetry_RX
+    Telemetry
     INCLUDES include ${gec_include_path}
-    SOURCES components/Telemetry_RX/src/Telemetry_RX.c
+    SOURCES components/Telemetry/src/Telemetry.c
 )
 
 DeclareCAmkESComponent(
@@ -134,17 +135,6 @@ DeclareCAmkESComponent(
     LIBS GEC
 )
 
-DeclareCAmkESComponent(
-    Pixhawk_TX
-    INCLUDES include ${gec_include_path}
-    SOURCES components/Pixhawk_TX/src/Pixhawk_TX.c
-)
-
-DeclareCAmkESComponent(
-    Telemetry_TX
-    INCLUDES include ${gec_include_path}
-    SOURCES components/Telemetry_TX/src/Telemetry_TX.c
-)
 
 DeclareCAmkESRootserver(comm.camkes)
 GenerateCAmkESRootserver()
