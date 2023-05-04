@@ -11,11 +11,10 @@
 #include "mavlink/v2.0/mavlink_types.h"
 #include "my_type.h"
 
-
 static mavlink_message_t mavlink_message_rx_buffer;
 static mavlink_status_t mavlink_status;
 
-static deque_t deque;
+static queue_t queue;
 
 static uint8_t key_material[] = {
     0xCB, 0x28, 0x4A, 0xD9, 0x1E, 0x85, 0x78, 0xB1, 0x77, 0x6E, 0x9B, 0x98,
@@ -46,7 +45,7 @@ void pre_init() {
   // gec_key_material_to_2_channels(&symkey_chan1, &symkey_chan2, key_material);
   gec_init_sym_key_conf_auth(&symkey_chan1, key_material);
 
-  deque_init(&deque);
+  queue_init(&queue);
 
   LOG_ERROR("Out pre_init");
 }
@@ -75,8 +74,9 @@ static int decrypt_to_msg(const CipherTextFrame_t *ct_frame,
   for (int i = 0; i < GEC_PT_LEN; i++) {
     result = my_mavlink_parse_char(pt[i], &msg, &status);
     if (result) {
-      LOG_ERROR("Message: [SEQ]: %03d, [MSGID]: %03d, [SYSID]: %03d, [COMPID]: %03d",
-                msg.seq, msg.msgid, msg.sysid, msg.compid);
+      LOG_ERROR(
+          "Message: [SEQ]: %03d, [MSGID]: %03d, [SYSID]: %03d, [COMPID]: %03d",
+          msg.seq, msg.msgid, msg.sysid, msg.compid);
       *ret_msg = msg;
       break;
     }
@@ -102,8 +102,6 @@ static inline void read_ringbuffer(void *buf, uint32_t len) {
       head = (head + 1) % RING_BUFFER_SIZE;
     }
   }
-  ringbuffer->head = head;
-  ring_buffer_release();
 }
 
 int run(void) {
@@ -134,12 +132,12 @@ int run(void) {
       LOG_ERROR("Decrypt failed");
     } else {
       for (int i = 0; i < GEC_PT_LEN; i++) {
-        deque_push_back(&deque, pt[i]);
+        enqueue(&queue, pt[i]);
       }
     }
 
-    for (int i = 0; i < deque.size; i++) {
-      deque_pop_front(&deque, &c);
+    for (int i = 0; i < queue.size; i++) {
+      dequeue(&queue, &c);
       result = my_mavlink_parse_char(c, &msg, &status);
       if (result) {
         LOG_ERROR("Message: [SEQ]: %d, [MSGID]: %d, [SYSID]: %d, [COMPID]: %d",

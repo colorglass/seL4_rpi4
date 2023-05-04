@@ -30,6 +30,6 @@ void serial__init() {
 }
 
 void serial_send(const uint8_t *buf, uint16_t len) {
-    ps_cdev_write(serial, buf, len, NULL, NULL);
+    ps_cdev_write(serial, (void *)buf, len, NULL, NULL);
 }
 

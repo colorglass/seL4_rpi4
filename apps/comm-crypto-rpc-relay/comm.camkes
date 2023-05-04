@@ -20,13 +20,16 @@ assembly {
         component Telemetry_TX telemetry_tx;
 
 
-        connection seL4SharedData   dataport_pixhawk_to_encrypt     (from pixhawk_rx.ring_buffer,   to encrypt.ring_buffer);
-        connection seL4SharedData   dataport_telem_to_decrypt       (from telem_rx.ring_buffer,     to decrypt.ring_buffer);
+        connection seL4SharedData   dataport_pixhawk_to_encrypt         (from pixhawk_rx.ring_buffer,   to encrypt.ring_buffer);
+        connection seL4SharedData   dataport_telem_to_decrypt           (from telem_rx.ring_buffer,     to decrypt.ring_buffer);
 
-        connection seL4RPCCall      rpccall_encrypt_to_telemetry_tx (from encrypt.serial,           to telemetry_tx.serial);
-        connection seL4RPCCall      rpccall_decrypt_to_pixhawk_tx   (from decrypt.serial,           to pixhawk_tx.serial);
-        connection seL4SharedData   dataport_encrypt_to_telemetry_tx(from encrypt.port,             to telemetry_tx.port);
-        connection seL4SharedData   dataport_decrypt_to_pixhawk_tx  (from decrypt.port,             to pixhawk_tx.port);
+        // Encrypt => Telemetry TX
+        connection seL4RPCCall      rpccall_encrypt_to_telemetry_tx     (from encrypt.serial,           to telemetry_tx.serial);
+        connection seL4SharedData   dataport_encrypt_to_telemetry_tx    (from encrypt.port,             to telemetry_tx.port);
+
+        // Decrypt => Pixhawk TX
+        connection seL4RPCCall      rpccall_decrypt_to_pixhawk_tx       (from decrypt.serial,           to pixhawk_tx.serial);
+        connection seL4SharedData   dataport_decrypt_to_pixhawk_tx      (from decrypt.port,             to pixhawk_tx.port);
     }
 
     configuration {
@@ -34,8 +37,8 @@ assembly {
         telem_rx.affinity   = 1;
         decrypt.affinity    = 2;
         encrypt.affinity    = 2;
-        telemetry_tx.affinity = 3;
-        pixhawk_tx.affinity = 3;
+        telemetry_tx.affinity = 2;
+        pixhawk_tx.affinity = 2;
 
         pixhawk_rx.priority = HIGHEST_PRIORITY;
         telem_rx.priority   = HIGHEST_PRIORITY;
@@ -44,10 +47,10 @@ assembly {
         telemetry_tx.priority = HIGHEST_PRIORITY;
         pixhawk_tx.priority = HIGHEST_PRIORITY;
 
-        pixhawk_rx.ring_buffer_access   = "RW";
-        telem_rx.ring_buffer_access     = "RW";
-        decrypt.ring_buffer_access      = "RW";
-        encrypt.ring_buffer_access      = "RW";
+        pixhawk_rx.ring_buffer_access   = "W";
+        telem_rx.ring_buffer_access     = "W";
+        decrypt.ring_buffer_access      = "R";
+        encrypt.ring_buffer_access      = "R";
 
         rpccall_encrypt_to_telemetry_tx.buffer = "dataport_encrypt_to_telemetry_tx";
         rpccall_decrypt_to_pixhawk_tx.buffer = "dataport_decrypt_to_pixhawk_tx";

@@ -13,8 +13,6 @@
 #include "mavlink/v2.0/mavlink_types.h"
 #include "my_type.h"
 
-
-
 static mavlink_message_t mavlink_message_rx_buffer;
 static mavlink_status_t mavlink_status;
 
@@ -357,8 +355,8 @@ static void recalc_checksum(mavlink_message_t *msg,
 static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
                                      mavlink_status_t *r_mavlink_status) {
   uint8_t msg_received =
-      mavlink_frame_char_buffer(&mavlink_message_rx_buffer, &mavlink_status,
-                                   c, r_message, r_mavlink_status);
+      mavlink_frame_char_buffer(&mavlink_message_rx_buffer, &mavlink_status, c,
+                                r_message, r_mavlink_status);
   if (msg_received == MAVLINK_FRAMING_BAD_CRC) {
     LOG_ERROR("MAVLink message parse error: Bad CRC");
   } else if (msg_received == MAVLINK_FRAMING_BAD_SIGNATURE) {
@@ -416,7 +414,7 @@ static int encrypt_to_frame(const mavlink_message_t *msg) {
       //     sizeof(ct_frame)) {
       //   LOG_ERROR("Write not completed");
       // }
-      serial_send(&ct_frame, sizeof(ct_frame));
+      serial_send((uint8_t *)&ct_frame, sizeof(ct_frame));
     }
   }
 
