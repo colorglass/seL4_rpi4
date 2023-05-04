@@ -14,4 +14,4 @@ add_library(
 
 target_include_directories(GEC PUBLIC include)
 
-target_link_libraries(GEC muslc)
+target_link_libraries(GEC muslc utils)

@@ -23,22 +23,9 @@ static uint8_t key_material[] = {
     0xCC, 0xED, 0xFE, 0xF7, 0x76, 0xF7, 0xC7, 0x75, 0x0C, 0x53, 0xA9, 0xE5,
 };
 static struct gec_sym_key symkey_chan2;
+static uint8_t key_ready = 0;
 
 static queue_t queue;
-
-static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
-                                     mavlink_status_t *r_mavlink_status) {
-  uint8_t msg_received =
-      mavlink_frame_char_buffer(&mavlink_message_rx_buffer, &mavlink_status, c,
-                                r_message, r_mavlink_status);
-  if (msg_received == MAVLINK_FRAMING_BAD_CRC) {
-    LOG_ERROR("MAVLink message parse error: Bad CRC");
-  } else if (msg_received == MAVLINK_FRAMING_BAD_SIGNATURE) {
-    LOG_ERROR("MAVLink message parse error: Bad signature");
-  }
-
-  return msg_received;
-}
 
 static int encrypt_to_frame(const mavlink_message_t *msg) {
   CipherTextFrame_t ct_frame;
@@ -73,6 +60,20 @@ static int encrypt_to_frame(const mavlink_message_t *msg) {
   return 0;
 }
 
+static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
+                                     mavlink_status_t *r_mavlink_status) {
+  uint8_t msg_received =
+      mavlink_frame_char_buffer(&mavlink_message_rx_buffer, &mavlink_status, c,
+                                r_message, r_mavlink_status);
+  if (msg_received == MAVLINK_FRAMING_BAD_CRC) {
+    LOG_ERROR("MAVLink message parse error: Bad CRC");
+  } else if (msg_received == MAVLINK_FRAMING_BAD_SIGNATURE) {
+    LOG_ERROR("MAVLink message parse error: Bad signature");
+  }
+
+  return msg_received;
+}
+
 static inline void handle_char(uint8_t c) {
   mavlink_message_t msg;
   mavlink_status_t status;
@@ -88,18 +89,28 @@ static inline void handle_char(uint8_t c) {
   }
 }
 
-void pre_init() {
-  LOG_ERROR("In pre_init");
+void key__init() {}
 
-  gec_init_sym_key_conf_auth(&symkey_chan2, key_material + GEC_RAW_KEY_LEN);
+void key_send(struct gec_sym_key symkey) {
+  symkey_chan2 = symkey;
+  key_ready = 1;
+}
+
+void pre_init() {
+  // LOG_ERROR("In pre_init");
+
+  // gec_init_sym_key_conf_auth(&symkey_chan2, key_material + GEC_RAW_KEY_LEN);
 
   queue_init(&queue);
 
-  LOG_ERROR("Out pre_init");
+  // LOG_ERROR("Out pre_init");
 }
 
 int run(void) {
-  LOG_ERROR("In run");
+  // LOG_ERROR("In run");
+
+  while (!key_ready) {
+  }
 
   ring_buffer_t *ringbuffer = (ring_buffer_t *)ring_buffer;
   uint32_t head, tail;
@@ -116,6 +127,6 @@ int run(void) {
     }
   }
 
-  LOG_ERROR("Out run");
+  // LOG_ERROR("Out run");
   return 0;
 }

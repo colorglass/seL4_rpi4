@@ -1,0 +1,21 @@
+import "../../interfaces/serial.idl4";
+import "../../interfaces/key.idl4";
+import "../../interfaces/ringbuffer.idl4";
+
+component KeyExchange {
+    include <my_type.h>;
+
+    control;
+
+    uses serial serial;
+    dataport Buf(4096) port_key;
+
+    dataport ring_buffer_t ring_buffer_pixhawk;
+    dataport ring_buffer_t ring_buffer_telemetry;
+
+    uses key key_encrypt;
+    uses key key_decrypt;
+
+    uses ringbuffer switch_pixhawk;
+    uses ringbuffer switch_telemetry;
+}

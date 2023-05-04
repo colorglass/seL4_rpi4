@@ -87,6 +87,8 @@ int main() {
   struct Person P1;
   uint8_t random_data1[RANDOM_DATA_LEN];
 
+  printf("symkey: %lu, privkey: %lu, pubkey: %lu\n", sizeof(P1.symkey_chan1), sizeof(P1.privkey), sizeof(P1.pubkey));
+
   int random_fd = open("/dev/random", O_RDONLY);
 
   for (int i = 0; i < RANDOM_DATA_LEN; i++) {
@@ -114,6 +116,9 @@ int main() {
   print_pubkey(&P1.pubkey);
 
   gec_sts_ctx_t ctx1;
+
+  printf("context: %lu\n", sizeof(ctx1));
+
   // Give B's public key to A
   init_context(&ctx1, &P1.pubkey, &P1.privkey, &P2.pubkey);
 
@@ -124,7 +129,7 @@ int main() {
   // Party A's step 1
   uint8_t msg1[MSG_1_LEN];
   if (initiate_sts(msg1, &ctx1, random_data1)) {
-    puts("initiate_sta failed");
+    puts("initiate_sts failed");
   }
 
   // Party B's step 1

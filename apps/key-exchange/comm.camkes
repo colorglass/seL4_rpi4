@@ -1,0 +1,80 @@
+import <std_connector.camkes>;
+import <global-connectors.camkes>;
+
+import "components/Pixhawk/Pixhawk.camkes";
+import "components/Telemetry/Telemetry.camkes";
+import "components/Decrypt/Decrypt.camkes";
+import "components/Encrypt/Encrypt.camkes";
+import "components/KeyExchange/KeyExchange.camkes";
+
+#define HIGHEST_PRIORITY 255
+
+assembly {
+    composition {
+        component Pixhawk   pixhawk;
+        component Telemetry telemetry;
+        component Decrypt   decrypt;
+        component Encrypt   encrypt;
+        component KeyExchange key_exchange;
+
+
+        connection seL4SharedData   dataport_pixhawk_to_encrypt         (from pixhawk.ring_buffer,      to encrypt.ring_buffer);
+        connection seL4SharedData   dataport_telem_to_decrypt           (from telemetry.ring_buffer,    to decrypt.ring_buffer);
+
+        connection seL4SharedData   dataport_pixhawk_to_keyexchange     (from pixhawk.ring_buffer_key,  to key_exchange.ring_buffer_pixhawk);
+        connection seL4SharedData   dataport_telem_to_keyexchange       (from telemetry.ring_buffer_key,to key_exchange.ring_buffer_telemetry);
+
+        // Encrypt => Telemetry
+        connection seL4RPCCall      rpccall_encrypt_to_telemetry        (from encrypt.serial,           to telemetry.serial);
+        connection seL4SharedData   dataport_encrypt_to_telemetry       (from encrypt.port,             to telemetry.port);
+
+        // Decrypt => Pixhawk
+        connection seL4RPCCall      rpccall_decrypt_to_pixhawk          (from decrypt.serial,           to pixhawk.serial);
+        connection seL4SharedData   dataport_decrypt_to_pixhawk         (from decrypt.port,             to pixhawk.port);
+
+        // Key Exchange => Telemetry
+        connection seL4RPCCall      rpccall_keyexchange_to_telemetry    (from key_exchange.serial,      to telemetry.serial);
+        connection seL4SharedData   dataport_keyexchange_to_telemetry   (from key_exchange.port_key,    to telemetry.port_key);
+
+        // Key Exchange => Encrypt
+        connection seL4RPCCall      rpccall_keyexchange_to_encrypt      (from key_exchange.key_encrypt, to encrypt.key);
+
+        // Key Exchange => Decrypt
+        connection seL4RPCCall      rpccall_keyexchange_to_decrypt      (from key_exchange.key_decrypt, to decrypt.key);
+
+        // Key Exchange => Pixhawk
+        connection seL4RPCCall      rpccall_keyexchange_to_pixhawk_switch (from key_exchange.switch_pixhawk, to pixhawk.switch);
+
+        // Key Exchange => Telemetry
+        connection seL4RPCCall      rpccall_keyexchange_to_telemetry_switch (from key_exchange.switch_telemetry, to telemetry.switch);
+    }
+
+    configuration {
+        pixhawk.affinity        = 0;
+        telemetry.affinity      = 1;
+        decrypt.affinity        = 2;
+        encrypt.affinity        = 2;
+        key_exchange.affinity   = 3;
+
+        pixhawk.priority        = HIGHEST_PRIORITY;
+        telemetry.priority      = HIGHEST_PRIORITY;
+        decrypt.priority        = HIGHEST_PRIORITY;
+        encrypt.priority        = HIGHEST_PRIORITY;
+        key_exchange.priority   = HIGHEST_PRIORITY;
+
+        key_exchange._stack_size = 8192;
+
+        pixhawk.ring_buffer_access                  = "W";
+        telemetry.ring_buffer_access                = "W";
+        decrypt.ring_buffer_access                  = "R";
+        encrypt.ring_buffer_access                  = "R";
+        pixhawk.ring_buffer_key_access              = "W";
+        telemetry.ring_buffer_key_access            = "W";
+        key_exchange.ring_buffer_pixhawk_access     = "R";
+        key_exchange.ring_buffer_telemetry_access   = "R";
+
+        rpccall_encrypt_to_telemetry.buffer     = "dataport_encrypt_to_telemetry";
+        rpccall_decrypt_to_pixhawk.buffer       = "dataport_decrypt_to_pixhawk";
+        rpccall_keyexchange_to_telemetry.buffer = "dataport_keyexchange_to_telemetry";
+    }
+}

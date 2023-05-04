@@ -1,0 +1,4 @@
+procedure key {
+    include <my_type.h>;
+    void send(struct gec_sym_key symkey);
+}

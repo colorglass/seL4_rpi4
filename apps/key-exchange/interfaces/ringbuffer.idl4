@@ -1,0 +1,3 @@
+procedure ringbuffer {
+    void switch_ringbuffer();
+}

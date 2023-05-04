@@ -1,0 +1,17 @@
+import "../../interfaces/serial.idl4";
+import "../../interfaces/key.idl4";
+import "../../interfaces/ringbuffer.idl4";
+
+component Decrypt {
+    include "my_type.h";
+
+    control;
+
+    dataport ring_buffer_t ring_buffer;
+
+    uses serial serial;
+    dataport Buf(4096) port;
+
+    provides key key;
+}
+
