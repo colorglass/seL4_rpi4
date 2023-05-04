@@ -110,6 +110,92 @@ DONNA_INLINE static void my_ed25519_extsk(hash_512bits extsk,
   extsk[31] |= 64;
 }
 
+static void
+my_barrett_reduce256_modm(bignum256modm r, const bignum256modm q1, const bignum256modm r1) {
+	LOG_ERROR("In barrett_reduce256_modm");
+	bignum256modm q3, r2;
+	uint128_t c, mul;
+	bignum256modm_element_t f, b, pb;
+
+	/* q1 = x >> 248 = 264 bits = 5 56 bit elements
+	   q2 = mu * q1
+	   q3 = (q2 / 256(32+1)) = q2 / (2^8)^(32+1) = q2 >> 264 */
+	mul64x64_128(c, modm_mu[0], q1[3])                 mul64x64_128(mul, modm_mu[3], q1[0]) add128(c, mul) mul64x64_128(mul, modm_mu[1], q1[2]) add128(c, mul) mul64x64_128(mul, modm_mu[2], q1[1]) add128(c, mul) shr128(f, c, 56);
+	mul64x64_128(c, modm_mu[0], q1[4]) add128_64(c, f) mul64x64_128(mul, modm_mu[4], q1[0]) add128(c, mul) mul64x64_128(mul, modm_mu[3], q1[1]) add128(c, mul) mul64x64_128(mul, modm_mu[1], q1[3]) add128(c, mul) mul64x64_128(mul, modm_mu[2], q1[2]) add128(c, mul)
+	f = lo128(c); q3[0] = (f >> 40) & 0xffff; shr128(f, c, 56);
+	mul64x64_128(c, modm_mu[4], q1[1]) add128_64(c, f) mul64x64_128(mul, modm_mu[1], q1[4]) add128(c, mul) mul64x64_128(mul, modm_mu[2], q1[3]) add128(c, mul) mul64x64_128(mul, modm_mu[3], q1[2]) add128(c, mul)
+	f = lo128(c); q3[0] |= (f << 16) & 0xffffffffffffff; q3[1] = (f >> 40) & 0xffff; shr128(f, c, 56);
+	mul64x64_128(c, modm_mu[4], q1[2]) add128_64(c, f) mul64x64_128(mul, modm_mu[2], q1[4]) add128(c, mul) mul64x64_128(mul, modm_mu[3], q1[3]) add128(c, mul)
+	f = lo128(c); q3[1] |= (f << 16) & 0xffffffffffffff; q3[2] = (f >> 40) & 0xffff; shr128(f, c, 56);
+	mul64x64_128(c, modm_mu[4], q1[3]) add128_64(c, f) mul64x64_128(mul, modm_mu[3], q1[4]) add128(c, mul)
+	f = lo128(c); q3[2] |= (f << 16) & 0xffffffffffffff; q3[3] = (f >> 40) & 0xffff; shr128(f, c, 56);
+	mul64x64_128(c, modm_mu[4], q1[4]) add128_64(c, f)
+	f = lo128(c); q3[3] |= (f << 16) & 0xffffffffffffff; q3[4] = (f >> 40) & 0xffff; shr128(f, c, 56);
+	q3[4] |= (f << 16);
+
+	mul64x64_128(c, modm_m[0], q3[0]) 
+	r2[0] = lo128(c) & 0xffffffffffffff; shr128(f, c, 56);
+	mul64x64_128(c, modm_m[0], q3[1]) add128_64(c, f) mul64x64_128(mul, modm_m[1], q3[0]) add128(c, mul)
+	r2[1] = lo128(c) & 0xffffffffffffff; shr128(f, c, 56);
+	mul64x64_128(c, modm_m[0], q3[2]) add128_64(c, f) mul64x64_128(mul, modm_m[2], q3[0]) add128(c, mul) mul64x64_128(mul, modm_m[1], q3[1]) add128(c, mul)
+	r2[2] = lo128(c) & 0xffffffffffffff; shr128(f, c, 56);
+	mul64x64_128(c, modm_m[0], q3[3]) add128_64(c, f) mul64x64_128(mul, modm_m[3], q3[0]) add128(c, mul) mul64x64_128(mul, modm_m[1], q3[2]) add128(c, mul) mul64x64_128(mul, modm_m[2], q3[1]) add128(c, mul)
+	r2[3] = lo128(c) & 0xffffffffffffff; shr128(f, c, 56);
+	mul64x64_128(c, modm_m[0], q3[4]) add128_64(c, f) mul64x64_128(mul, modm_m[4], q3[0]) add128(c, mul) mul64x64_128(mul, modm_m[3], q3[1]) add128(c, mul) mul64x64_128(mul, modm_m[1], q3[3]) add128(c, mul) mul64x64_128(mul, modm_m[2], q3[2]) add128(c, mul)
+	r2[4] = lo128(c) & 0x0000ffffffffff;
+
+	pb = 0;
+	pb += r2[0]; b = lt_modm(r1[0], pb); r[0] = (r1[0] - pb + (b << 56)); pb = b;
+	pb += r2[1]; b = lt_modm(r1[1], pb); r[1] = (r1[1] - pb + (b << 56)); pb = b;
+	pb += r2[2]; b = lt_modm(r1[2], pb); r[2] = (r1[2] - pb + (b << 56)); pb = b;
+	pb += r2[3]; b = lt_modm(r1[3], pb); r[3] = (r1[3] - pb + (b << 56)); pb = b;
+	pb += r2[4]; b = lt_modm(r1[4], pb); r[4] = (r1[4] - pb + (b << 40)); 
+
+	LOG_ERROR("Before reduce256_modm");
+	reduce256_modm(r);
+	reduce256_modm(r);
+}
+
+
+static void
+my_expand256_modm(bignum256modm out, const unsigned char *in, size_t len) {
+	unsigned char work[64] = {0};
+	bignum256modm_element_t x[16];
+	bignum256modm q1;
+
+	memcpy(work, in, len);
+	x[0] = U8TO64_LE(work +  0);
+	x[1] = U8TO64_LE(work +  8);
+	x[2] = U8TO64_LE(work + 16);
+	x[3] = U8TO64_LE(work + 24);
+	x[4] = U8TO64_LE(work + 32);
+	x[5] = U8TO64_LE(work + 40);
+	x[6] = U8TO64_LE(work + 48);
+	x[7] = U8TO64_LE(work + 56);
+
+	/* r1 = (x mod 256^(32+1)) = x mod (2^8)(31+1) = x & ((1 << 264) - 1) */
+	out[0] = (                         x[0]) & 0xffffffffffffff;
+	out[1] = ((x[ 0] >> 56) | (x[ 1] <<  8)) & 0xffffffffffffff;
+	out[2] = ((x[ 1] >> 48) | (x[ 2] << 16)) & 0xffffffffffffff;
+	out[3] = ((x[ 2] >> 40) | (x[ 3] << 24)) & 0xffffffffffffff;
+	out[4] = ((x[ 3] >> 32) | (x[ 4] << 32)) & 0x0000ffffffffff;
+
+	/* under 252 bits, no need to reduce */
+	if (len < 32)
+		return;
+
+	/* q1 = x >> 248 = 264 bits */
+	q1[0] = ((x[ 3] >> 56) | (x[ 4] <<  8)) & 0xffffffffffffff;
+	q1[1] = ((x[ 4] >> 48) | (x[ 5] << 16)) & 0xffffffffffffff;
+	q1[2] = ((x[ 5] >> 40) | (x[ 6] << 24)) & 0xffffffffffffff;
+	q1[3] = ((x[ 6] >> 32) | (x[ 7] << 32)) & 0xffffffffffffff;
+	q1[4] = ((x[ 7] >> 24)                );
+
+	LOG_ERROR("Before barrett_reduce256_modm");
+	my_barrett_reduce256_modm(out, q1, out);
+	LOG_ERROR("After barrett_reduce256_modm");
+}
+
 static void ED25519_FN(my_ed25519_publickey)(const ed25519_secret_key sk,
                                              ed25519_public_key pk) {
   bignum256modm a;
@@ -119,7 +205,7 @@ static void ED25519_FN(my_ed25519_publickey)(const ed25519_secret_key sk,
   /* A = aB */
   my_ed25519_extsk(extsk, sk);
   LOG_ERROR("my_ed25519_extsk complete");
-  expand256_modm(a, extsk, 32);
+  my_expand256_modm(a, extsk, 32);
   LOG_ERROR("expand256_modm complete");
   ge25519_scalarmult_base_niels(&A, ge25519_niels_base_multiples, a);
   LOG_ERROR("ge25519_scalarmult_base_niels complete");
@@ -169,13 +255,13 @@ int run(void) {
   }
 
   LOG_ERROR("generate");
-  // generate(&our_pubkey, &privkey, random_data);
-  memcpy(privkey.priv, random_data, RANDOM_DATA_LEN);
-  LOG_ERROR("memcpy complete");
-  // gec_generate_sign_keypair(&privkey, &our_pubkey);
-  my_ed25519_publickey(privkey.priv, our_pubkey.pub);
-  LOG_ERROR("ed25519_publickey complete");
-  memcpy(privkey.pub, our_pubkey.pub, GEC_PUB_KEY_LEN);
+  generate(&our_pubkey, &privkey, random_data);
+  // memcpy(privkey.priv, random_data, RANDOM_DATA_LEN);
+  // LOG_ERROR("memcpy complete");
+  // // gec_generate_sign_keypair(&privkey, &our_pubkey);
+  // my_ed25519_publickey(privkey.priv, our_pubkey.pub);
+  // LOG_ERROR("ed25519_publickey complete");
+  // memcpy(privkey.pub, our_pubkey.pub, GEC_PUB_KEY_LEN);
   LOG_ERROR("generate finished");
 
   // Send public key to GCS
