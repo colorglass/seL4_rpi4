@@ -27,8 +27,13 @@ static uint8_t key_ready = 0;
 
 static queue_t queue;
 
+static ps_io_ops_t io_ops;
+static ps_chardevice_t serial_device;
+static ps_chardevice_t *serial = NULL;
+
 static int encrypt_to_frame(const mavlink_message_t *msg) {
   CipherTextFrame_t ct_frame;
+  serial_buf_t ct_buf;
   uint8_t buf[MAVLINK_MAX_FRAME_LEN];
   int len;
 
@@ -40,8 +45,10 @@ static int encrypt_to_frame(const mavlink_message_t *msg) {
 
   uint32_t loop = queue.size / GEC_PT_LEN;
 
-  ct_frame.magic = GEC_CIPHERTEXT_FRAME_MAGIC;
-  ct_frame.tag = GEC_CIPHERTEXT_FRAME_TAG;
+  // ct_frame.magic = GEC_CIPHERTEXT_FRAME_MAGIC;
+  // ct_frame.tag = GEC_CIPHERTEXT_FRAME_TAG;
+  ct_buf.buf[0] = GEC_CIPHERTEXT_FRAME_MAGIC;
+  ct_buf.buf[1] = GEC_CIPHERTEXT_FRAME_TAG;
 
   for (uint32_t i = 0; i < loop; i++) {
     for (int j = 0; j < GEC_PT_LEN; j++) {
@@ -49,11 +56,17 @@ static int encrypt_to_frame(const mavlink_message_t *msg) {
       dequeue(&queue, &c);
       buf[j] = c;
     }
-    if (gec_encrypt(&symkey_chan2, buf, ct_frame.ciphertext) != GEC_SUCCESS) {
+    // if (gec_encrypt(&symkey_chan2, buf, ct_frame.ciphertext) != GEC_SUCCESS) {
+    if (gec_encrypt(&symkey_chan2, buf, ct_buf.buf + 2) != GEC_SUCCESS) {
       LOG_ERROR("Failed to encrypt block %d", i);
     } else {
-      LOG_ERROR("Encrypted block %d", i);
-      serial_send((uint8_t *)&ct_frame, sizeof(ct_frame));
+      // if (telem_send(&ct_buf, sizeof(ct_frame))) {
+      //   LOG_ERROR("Send failed");
+      // }
+
+      if (ps_cdev_write(serial, ct_buf.buf, sizeof(ct_frame), NULL, NULL) != sizeof(ct_frame)) {
+        LOG_ERROR("Write not completed");
+      }
     }
   }
 
@@ -102,6 +115,16 @@ void pre_init() {
   // gec_init_sym_key_conf_auth(&symkey_chan2, key_material + GEC_RAW_KEY_LEN);
 
   queue_init(&queue);
+
+  int error;
+
+  error = camkes_io_ops(&io_ops);
+  ZF_LOGF_IF(error, "Failed to initialise IO ops");
+
+  serial = ps_cdev_init(TELEMETRY_PORT_NUMBER, &io_ops, &serial_device);
+  if (serial == NULL) {
+    ZF_LOGF("Failed to initialise char device");
+  }
 
   // LOG_ERROR("Out pre_init");
 }

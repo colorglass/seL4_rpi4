@@ -39,12 +39,26 @@ static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
   return msg_received;
 }
 
+static ps_io_ops_t io_ops;
+static ps_chardevice_t serial_device;
+static ps_chardevice_t *serial = NULL;
+
 void pre_init() {
   // LOG_ERROR("In pre_init");
 
   // gec_init_sym_key_conf_auth(&symkey_chan1, key_material);
 
   queue_init(&queue);
+
+  int error;
+
+  error = camkes_io_ops(&io_ops);
+  ZF_LOGF_IF(error, "Failed to initialise IO ops");
+
+  serial = ps_cdev_init(UART_PORT_NUMBER, &io_ops, &serial_device);
+  if (serial == NULL) {
+    ZF_LOGF("Failed to initialise char device");
+  }
 
   // LOG_ERROR("Out pre_init");
 }
@@ -119,7 +133,8 @@ int run(void) {
   uint8_t pt[GEC_PT_LEN];
   mavlink_message_t msg;
   mavlink_status_t status;
-  uint8_t buf[GEC_CT_LEN];
+  // uint8_t buf[MAVLINK_MAX_FRAME_LEN];
+  serial_buf_t buf;
   uint32_t len;
   int result;
   uint8_t c;
@@ -155,9 +170,15 @@ int run(void) {
       if (result) {
         LOG_ERROR("Message: [SEQ]: %d, [MSGID]: %d, [SYSID]: %d, [COMPID]: %d",
                   msg.seq, msg.msgid, msg.sysid, msg.compid);
-        len = mavlink_msg_to_send_buffer(buf, &msg);
+        len = mavlink_msg_to_send_buffer(buf.buf, &msg);
 
-        serial_send(buf, len);
+        // if (pixhawk_send(&buf, len)) {
+        //   LOG_ERROR("Send failed");
+        // }
+
+        if (ps_cdev_write(serial, buf.buf, len, NULL, NULL) != len) {
+          LOG_ERROR("Write not completed");
+        }
       }
     }
   }

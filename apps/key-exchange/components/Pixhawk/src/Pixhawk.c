@@ -41,10 +41,13 @@ void pre_init() {
 
 void serial__init() {}
 
-void serial_send(const uint8_t *buf, uint16_t len) {
-  if (ps_cdev_write(serial, (void *)buf, len, NULL, NULL) != len) {
+uint8_t serial_send(const serial_buf_t *buf, uint32_t len) {
+  // LOG_ERROR("Send len: %u", len);
+  uint8_t err = ps_cdev_write(serial, (void *)buf->buf, len, NULL, NULL) != len;
+  if (err) {
     LOG_ERROR("Write not completed");
   }
+  return err;
 }
 
 void switch__init() {}

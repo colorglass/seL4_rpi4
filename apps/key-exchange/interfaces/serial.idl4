@@ -1,3 +1,4 @@
 procedure serial {
-    void send(refin uint8_t buf, in uint16_t len);
-};
+    include <my_type.h>;
+    uint8_t send(refin serial_buf_t buf, in uint32_t len);
+}
