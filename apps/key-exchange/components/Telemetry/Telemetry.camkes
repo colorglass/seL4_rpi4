@@ -18,6 +18,7 @@ component Telemetry {
     dataport ring_buffer_t ring_buffer;
     dataport ring_buffer_t ring_buffer_key;
 
+    // Used for RPC call from Key Exchange
     dataport Buf(4096) port_key;
 
     provides ringbuffer switch;

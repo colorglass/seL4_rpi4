@@ -11,5 +11,6 @@ component Encrypt {
     dataport Buf(4096) port;
 
     provides key key;
+    dataport Buf(8192) port_key;
 }
 

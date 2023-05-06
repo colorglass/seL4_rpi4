@@ -91,8 +91,8 @@ static inline void handle_char(uint8_t c) {
 
 void key__init() {}
 
-void key_send(struct gec_sym_key symkey) {
-  symkey_chan2 = symkey;
+void key_send(const struct gec_sym_key *symkey) {
+  symkey_chan2 = *symkey;
   key_ready = 1;
 }
 
@@ -109,11 +109,13 @@ void pre_init() {
 int run(void) {
   // LOG_ERROR("In run");
 
+  ring_buffer_t *ringbuffer = (ring_buffer_t *)ring_buffer;
+  uint32_t head, tail;
+
   while (!key_ready) {
   }
 
-  ring_buffer_t *ringbuffer = (ring_buffer_t *)ring_buffer;
-  uint32_t head, tail;
+  LOG_ERROR("Key ready. Start encryption.");
 
   head = ringbuffer->head;
   ring_buffer_acquire();

@@ -73,7 +73,9 @@ int run(void) {
     ring_buffer_key_release();
   }
 
-  rb = ring_buffer;
+  rb = (ring_buffer_t *)ring_buffer;
+
+  LOG_ERROR("Switched ring buffer");
 
   while (1) {
     while ((c = ps_cdev_getchar(serial)) == EOF) {

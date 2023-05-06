@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <utils/util.h>
 
+#include "camkes-component-key_exchange.h"
 #include "gec-ke.h"
 #include "gec.h"
 #include "mavlink/v2.0/ardupilotmega/mavlink.h"
@@ -54,6 +55,8 @@ static void read_message(ring_buffer_t *ringbuffer, mavlink_message_t *r_msg) {
       head = (head + 1) % sizeof(ringbuffer->buffer);
     }
   }
+  ringbuffer->head = head;
+  ring_buffer_pixhawk_release();
 }
 
 static void read_from_telemetry(ring_buffer_t *ringbuffer, uint8_t *buf,
@@ -72,6 +75,8 @@ static void read_from_telemetry(ring_buffer_t *ringbuffer, uint8_t *buf,
       head = (head + 1) % sizeof(ringbuffer->buffer);
     }
   }
+  ringbuffer->head = head;
+  ring_buffer_telemetry_release();
 }
 
 gec_sts_ctx_t ctx;
@@ -86,7 +91,24 @@ uint8_t key_material[KEY_MATERIAL_LEN];
 struct gec_sym_key symkey_chan1;
 struct gec_sym_key symkey_chan2;
 
-void pre_init() { LOG_ERROR("In pre_init"); }
+static ps_io_ops_t io_ops;
+static ps_chardevice_t serial_device;
+static ps_chardevice_t *serial = NULL;
+
+void pre_init() {
+  LOG_ERROR("In pre_init");
+
+  int error;
+  ring_buffer_t *rb;
+
+  error = camkes_io_ops(&io_ops);
+  ZF_LOGF_IF(error, "Failed to initialise IO ops");
+
+  serial = ps_cdev_init(TELEMETRY_PORT_NUMBER, &io_ops, &serial_device);
+  if (serial == NULL) {
+    ZF_LOGF("Failed to initialise char device");
+  }
+}
 
 #ifndef ED25519_REFHASH
 #define ED25519_REFHASH
@@ -213,6 +235,88 @@ static void ED25519_FN(my_ed25519_publickey)(const ed25519_secret_key sk,
   LOG_ERROR("ge25519_pack complete");
 }
 
+static void print_secretkey(ed25519_secret_key sk) {
+  puts("ed25519_secretkey");
+  for (int i = 0; i < 32; i++) {
+    printf("%02X ", sk[i]);
+  }
+  putchar('\n');
+}
+
+static void print_publickey(ed25519_public_key pk) {
+  puts("ed25519_publickey");
+  for (int i = 0; i < 32; i++) {
+    printf("%02X ", pk[i]);
+  }
+  putchar('\n');
+}
+
+static void print_privkey(struct gec_privkey *privkey) {
+  puts("====================================");
+  puts("gec_prikey");
+  print_secretkey(privkey->priv);
+  print_publickey(privkey->pub);
+  puts("====================================");
+}
+
+static void print_pubkey(struct gec_pubkey *pubkey) {
+  puts("====================================");
+  puts("gec_pubkey");
+  print_publickey(pubkey->pub);
+  puts("====================================");
+}
+
+static void print_msg1(uint8_t *msg) {
+  puts("====================================");
+  puts("MSG 1");
+  for (int i=0; i < MSG_1_LEN; i++) {
+    printf("%02X ", msg[i]);
+    if ((i+1) % 16 == 0 && i != MSG_1_LEN - 1) {
+      putchar('\n');
+    }
+  }
+  putchar('\n');
+  puts("====================================");
+}
+
+static void print_msg2(uint8_t *msg) {
+  puts("====================================");
+  puts("MSG 2");
+  for (int i=0; i < MSG_2_LEN; i++) {
+    printf("%02X ", msg[i]);
+    if ((i+1) % 16 == 0 && i != MSG_2_LEN - 1) {
+      putchar('\n');
+    }
+  }
+  putchar('\n');
+  puts("====================================");
+}
+
+static void print_msg3(uint8_t *msg) {
+  puts("====================================");
+  puts("MSG 3");
+  for (int i=0; i < MSG_3_LEN; i++) {
+    printf("%02X ", msg[i]);
+    if ((i+1) % 16 == 0 && i != MSG_3_LEN - 1) {
+      putchar('\n');
+    }
+  }
+  putchar('\n');
+  puts("====================================");
+}
+
+void print_key_material(uint8_t *km) {
+  puts("====================================");
+  puts("Key material");
+  for (int i = 0; i < KEY_MATERIAL_LEN; i++) {
+    printf("%02X ", km[i]);
+    if ((i + 1) % 16 == 0) {
+      putchar('\n');
+    }
+  }
+  puts("====================================");
+}
+
 int run(void) {
   LOG_ERROR("In run");
 
@@ -256,6 +360,9 @@ int run(void) {
 
   LOG_ERROR("generate");
   generate(&our_pubkey, &privkey, random_data);
+
+  print_pubkey(&our_pubkey);
+
   // memcpy(privkey.priv, random_data, RANDOM_DATA_LEN);
   // LOG_ERROR("memcpy complete");
   // // gec_generate_sign_keypair(&privkey, &our_pubkey);
@@ -264,47 +371,106 @@ int run(void) {
   // memcpy(privkey.pub, our_pubkey.pub, GEC_PUB_KEY_LEN);
   LOG_ERROR("generate finished");
 
-  // Send public key to GCS
-  LOG_ERROR("Send public key to GCS");
-  serial_send((uint8_t *)&our_pubkey, sizeof(our_pubkey));
-
-  LOG_ERROR("Read from telemetry");
+  LOG_ERROR("Read their pubkey");
   read_from_telemetry(ringbuffer_telemetry, (uint8_t *)&their_pubkey,
                       sizeof(their_pubkey));
+
+  print_pubkey(&their_pubkey);
 
   LOG_ERROR("init_context");
   init_context(&ctx, &our_pubkey, &privkey, &their_pubkey);
 
-  // Party A's step 1
-  LOG_ERROR("initiate_sts");
-  if (initiate_sts(msg1, &ctx, random_data)) {
-    LOG_ERROR("initiate_sts failed");
+  // Send public key to GCS
+  LOG_ERROR("Send public key to GCS");
+  // serial_send((uint8_t *)&our_pubkey.pub, sizeof(our_pubkey));
+  ps_cdev_write(serial, &our_pubkey, sizeof(our_pubkey), NULL, NULL);
+
+  LOG_ERROR("Read MSG 1");
+  read_from_telemetry(ringbuffer_telemetry, msg1, sizeof(msg1));
+
+  print_msg1(msg1);
+
+  LOG_ERROR("respond_sts");
+  if (respond_sts(msg1, msg2, &ctx, random_data)) {
+    LOG_ERROR("respond_sts failed");
   }
 
-  // Send MSG 1
-  LOG_ERROR("Send MSG 1");
-  serial_send(msg1, sizeof(msg1));
+  print_msg2(msg2);
 
-  // Read MSG 2
-  LOG_ERROR("read_from_telemetry");
-  read_from_telemetry(ringbuffer_telemetry, msg2, sizeof(msg2));
+  LOG_ERROR("Send MSG 2");
+  ps_cdev_write(serial, msg2, sizeof(msg2), NULL, NULL);
 
-  // Party A's step 2
-  LOG_ERROR("response_ack_sts");
-  if (response_ack_sts(msg2, msg3, &ctx, key_material)) {
-    LOG_ERROR("response_ack_sts failed");
+  LOG_ERROR("Read MSG 3");
+  read_from_telemetry(ringbuffer_telemetry, msg3, sizeof(msg3));
+
+  print_msg3(msg3);
+
+  LOG_ERROR("finish_sts");
+  if (finish_sts(msg3, &ctx, key_material)) {
+    LOG_ERROR("finish_sts failed");;
   }
 
-  // Send MSG 3
-  LOG_ERROR("Send MSG ");
-  serial_send(msg3, sizeof(msg3));
+  /**
+   * Old setup
+  */
+
+  // // Send public key to GCS
+  // LOG_ERROR("Send public key to GCS");
+  // // serial_send((uint8_t *)&our_pubkey.pub, sizeof(our_pubkey));
+  // ps_cdev_write(serial, &our_pubkey, sizeof(our_pubkey), NULL, NULL);
+
+  // LOG_ERROR("Read their pubkey");
+  // read_from_telemetry(ringbuffer_telemetry, (uint8_t *)&their_pubkey,
+  //                     sizeof(their_pubkey));
+
+  // print_pubkey(&their_pubkey);
+
+  // LOG_ERROR("init_context");
+  // init_context(&ctx, &our_pubkey, &privkey, &their_pubkey);
+
+  // print_privkey(&privkey);
+
+  // // Party A's step 1
+  // LOG_ERROR("initiate_sts");
+  // if (initiate_sts(msg1, &ctx, random_data)) {
+  //   LOG_ERROR("initiate_sts failed");
+  // }
+
+  // print_msg1(msg1);
+
+  // // Send MSG 1
+  // LOG_ERROR("Send MSG 1");
+  // // serial_send(msg1, sizeof(msg1));
+  // ps_cdev_write(serial, msg1, sizeof(msg1), NULL, NULL);
+
+  // // Read MSG 2
+  // LOG_ERROR("Read MSG 2");
+  // read_from_telemetry(ringbuffer_telemetry, msg2, sizeof(msg2));
+
+  // print_msg2(msg2);
+
+  // // Party A's step 2
+  // LOG_ERROR("response_ack_sts");
+  // if (response_ack_sts(msg2, msg3, &ctx, key_material)) {
+  //   LOG_ERROR("response_ack_sts failed");
+  // }
+
+  // print_msg3(msg3);
+
+  // // Send MSG 3
+  // LOG_ERROR("Send MSG 3");
+  // // serial_send(msg3, sizeof(msg3));
+  // ps_cdev_write(serial, msg3, sizeof(msg3), NULL, NULL);
+
+
+  print_key_material(key_material);
 
   // Key exchange complete
   gec_key_material_to_2_channels(&symkey_chan1, &symkey_chan2, key_material);
 
-  LOG_ERROR("Send keys");
-  key_decrypt_send(symkey_chan1);
-  key_encrypt_send(symkey_chan2);
+  LOG_ERROR("Send keys to decrypt/encrypt");
+  key_decrypt_send(&symkey_chan1);
+  key_encrypt_send(&symkey_chan2);
 
   LOG_ERROR("Switch ringbuffer");
   switch_pixhawk_switch_ringbuffer();

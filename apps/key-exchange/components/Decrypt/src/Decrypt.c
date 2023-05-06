@@ -101,12 +101,14 @@ static inline void read_ringbuffer(void *buf, uint32_t len) {
       head = (head + 1) % RING_BUFFER_SIZE;
     }
   }
+  ringbuffer->head = head;
+  ring_buffer_release();
 }
 
 void key__init() {}
 
-void key_send(struct gec_sym_key symkey) {
-  symkey_chan1 = symkey;
+void key_send(const struct gec_sym_key *symkey) {
+  symkey_chan1 = *symkey;
   key_ready = 1;
 }
 
@@ -124,6 +126,8 @@ int run(void) {
 
   while (!key_ready) {
   }
+
+  LOG_ERROR("Key ready. Start decryption.");
 
   while (1) {
     read_ringbuffer(&ct_frame, sizeof(ct_frame));
