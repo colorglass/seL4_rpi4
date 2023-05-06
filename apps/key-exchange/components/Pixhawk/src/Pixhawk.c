@@ -41,7 +41,7 @@ void pre_init() {
 
 void serial__init() {}
 
-uint8_t serial_send(const serial_buf_t *buf, uint32_t len) {
+uint8_t serial_send(const pixhawk_buf_t *buf, uint32_t len) {
   // LOG_ERROR("Send len: %u", len);
   uint8_t err = ps_cdev_write(serial, (void *)buf->buf, len, NULL, NULL) != len;
   if (err) {

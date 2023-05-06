@@ -1,0 +1,4 @@
+procedure pixhawk {
+    include <my_type.h>;
+    uint8_t send(refin pixhawk_buf_t buf, in uint32_t len);
+}

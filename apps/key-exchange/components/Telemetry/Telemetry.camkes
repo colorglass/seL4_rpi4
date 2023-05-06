@@ -1,5 +1,5 @@
 import "../GPIO/GPIO.camkes";
-import "../../interfaces/serial.idl4";
+import "../../interfaces/telemetry.idl4";
 import "../../interfaces/key.idl4";
 import "../../interfaces/ringbuffer.idl4";
 
@@ -8,8 +8,8 @@ component Telemetry {
 
     control;
 
-    provides serial serial;
-    dataport Buf(4096) port;
+    // provides telemetry serial;
+    // dataport Buf(4096) port;
 
     dataport Buf(4096) gpiohw_mem;
     emits Dummy dummy_source;
@@ -19,7 +19,7 @@ component Telemetry {
     dataport ring_buffer_t ring_buffer_key;
 
     // Used for RPC call from Key Exchange
-    dataport Buf(4096) port_key;
+    // dataport Buf(4096) port_key;
 
     provides ringbuffer switch;
 

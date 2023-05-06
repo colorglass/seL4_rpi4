@@ -1,22 +1,13 @@
-import "../../interfaces/telemetry.idl4";
-import "../../interfaces/key.idl4";
 import "../GPIO/GPIO.camkes";
+import "../../interfaces/pixhawk.idl4";
 
-component Encrypt {
-    include "my_type.h";
-    control;
-
-    dataport ring_buffer_t ring_buffer;
-
-    uses telemetry telem;
-    dataport Buf(4096) port;
-
-    provides key key;
-    dataport Buf(8192) port_key;
-
+component Pixhawk_TX {
     dataport Buf(4096) gpiohw_mem;
     emits Dummy dummy_source;
     consumes Dummy serial_dev;
+
+    provides pixhawk serial;
+    dataport Buf(4096) port;
 
     composition {
         component GPIOHW gpio_hw;

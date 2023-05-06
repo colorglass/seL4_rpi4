@@ -184,7 +184,7 @@ int run(void) {
   mavlink_message_t msg;
   float yaw;
   uint16_t voltages[10];
-  bool got_attitude = true;
+  bool got_attitude = false;
   bool got_voltage = false;
   unsigned int seed;
 
@@ -193,21 +193,25 @@ int run(void) {
     read_message(ringbuffer_pixhawk, &msg);
 
     switch (msg.msgid) {
-    // case MAVLINK_MSG_ID_ATTITUDE:
-    //   yaw = mavlink_msg_attitude_get_yaw(&msg);
-    //   got_attitude = true;
-    //   break;
+    case MAVLINK_MSG_ID_AHRS2:
+      if (!got_attitude) {
+        yaw = mavlink_msg_attitude_get_yaw(&msg);
+        got_attitude = true;
+      }
+      break;
     case MAVLINK_MSG_ID_BATTERY_STATUS:
-      mavlink_msg_battery_status_get_voltages(&msg, voltages);
-      got_voltage = true;
+      if (!got_voltage) {
+        mavlink_msg_battery_status_get_voltages(&msg, voltages);
+        got_voltage = true;
+      }
       break;
     default:
       break;
     }
   } while (!got_attitude && !got_voltage);
 
-  // seed = (unsigned int)(yaw * M_1_PI * 180 * 100) /* * voltages[0] */;
-  seed = voltages[0];
+  seed = (unsigned int)(yaw * M_1_PI * 180 * 100) * voltages[0];
+  // seed = voltages[0];
   LOG_ERROR("seed: %u", seed);
   srand(seed);
 

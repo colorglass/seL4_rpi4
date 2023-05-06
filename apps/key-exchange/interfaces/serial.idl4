@@ -1,4 +1,0 @@
-procedure serial {
-    include <my_type.h>;
-    uint8_t send(refin serial_buf_t buf, in uint32_t len);
-}

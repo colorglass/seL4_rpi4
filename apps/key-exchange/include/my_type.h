@@ -23,9 +23,13 @@ typedef struct ring_buffer {
 #define MAVLINK_MAX_FRAME_LEN 280
 
 
-typedef struct serial_buf {
+typedef struct pixhawk_buf {
     uint8_t buf[MAVLINK_MAX_FRAME_LEN];
-} serial_buf_t;
+} pixhawk_buf_t;
+
+typedef struct telemetry_buf {
+    uint8_t buf[2 + GEC_CT_LEN];
+} telemetry_buf_t;
 
 
 /**

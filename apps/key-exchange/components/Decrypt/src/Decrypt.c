@@ -134,7 +134,7 @@ int run(void) {
   mavlink_message_t msg;
   mavlink_status_t status;
   // uint8_t buf[MAVLINK_MAX_FRAME_LEN];
-  serial_buf_t buf;
+  pixhawk_buf_t buf;
   uint32_t len;
   int result;
   uint8_t c;
@@ -172,13 +172,13 @@ int run(void) {
                   msg.seq, msg.msgid, msg.sysid, msg.compid);
         len = mavlink_msg_to_send_buffer(buf.buf, &msg);
 
-        // if (pixhawk_send(&buf, len)) {
-        //   LOG_ERROR("Send failed");
-        // }
-
-        if (ps_cdev_write(serial, buf.buf, len, NULL, NULL) != len) {
-          LOG_ERROR("Write not completed");
+        if (pixhawk_send(&buf, len)) {
+          LOG_ERROR("Send failed");
         }
+
+        // if (ps_cdev_write(serial, buf.buf, len, NULL, NULL) != len) {
+        //   LOG_ERROR("Write not completed");
+        // }
       }
     }
   }

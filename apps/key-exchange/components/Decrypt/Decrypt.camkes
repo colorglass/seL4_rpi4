@@ -1,4 +1,4 @@
-import "../../interfaces/serial.idl4";
+import "../../interfaces/pixhawk.idl4";
 import "../../interfaces/key.idl4";
 import "../../interfaces/ringbuffer.idl4";
 import "../GPIO/GPIO.camkes";
@@ -10,7 +10,7 @@ component Decrypt {
 
     dataport ring_buffer_t ring_buffer;
 
-    uses serial pixhawk;
+    uses pixhawk pixhawk;
     dataport Buf(4096) port;
 
     provides key key;

@@ -32,8 +32,8 @@ static ps_chardevice_t serial_device;
 static ps_chardevice_t *serial = NULL;
 
 static int encrypt_to_frame(const mavlink_message_t *msg) {
-  CipherTextFrame_t ct_frame;
-  serial_buf_t ct_buf;
+  // CipherTextFrame_t ct_frame;
+  telemetry_buf_t ct_buf;
   uint8_t buf[MAVLINK_MAX_FRAME_LEN];
   int len;
 
@@ -60,13 +60,13 @@ static int encrypt_to_frame(const mavlink_message_t *msg) {
     if (gec_encrypt(&symkey_chan2, buf, ct_buf.buf + 2) != GEC_SUCCESS) {
       LOG_ERROR("Failed to encrypt block %d", i);
     } else {
-      // if (telem_send(&ct_buf, sizeof(ct_frame))) {
-      //   LOG_ERROR("Send failed");
-      // }
-
-      if (ps_cdev_write(serial, ct_buf.buf, sizeof(ct_frame), NULL, NULL) != sizeof(ct_frame)) {
-        LOG_ERROR("Write not completed");
+      if (telem_send(&ct_buf, sizeof(CipherTextFrame_t))) {
+        LOG_ERROR("Send failed");
       }
+
+      // if (ps_cdev_write(serial, ct_buf.buf, sizeof(ct_frame), NULL, NULL) != sizeof(ct_frame)) {
+      //   LOG_ERROR("Write not completed");
+      // }
     }
   }
 

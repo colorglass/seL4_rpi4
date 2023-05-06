@@ -142,6 +142,18 @@ DeclareCAmkESComponent(
     LIBS GEC
 )
 
+DeclareCAmkESComponent(
+    Pixhawk_TX
+    INCLUDES include ${gec_include_path}
+    SOURCES components/Pixhawk_TX/src/Pixhawk_TX.c
+)
+
+DeclareCAmkESComponent(
+    Telemetry_TX
+    INCLUDES include ${gec_include_path}
+    SOURCES components/Telemetry_TX/src/Telemetry_TX.c
+)
+
 
 DeclareCAmkESRootserver(comm.camkes)
 GenerateCAmkESRootserver()
