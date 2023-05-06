@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <utils/util.h>
 
-#include "camkes-component-key_exchange.h"
 #include "gec-ke.h"
 #include "gec.h"
 #include "mavlink/v2.0/ardupilotmega/mavlink.h"
@@ -14,6 +13,25 @@
 #include "mavlink/v2.0/mavlink_helpers.h"
 #include "mavlink/v2.0/mavlink_types.h"
 #include "my_type.h"
+
+static gec_sts_ctx_t ctx;
+static struct gec_privkey privkey;
+static struct gec_pubkey our_pubkey;
+static struct gec_pubkey their_pubkey;
+static uint8_t random_data[RANDOM_DATA_LEN];
+static uint8_t msg1[MSG_1_LEN];
+static uint8_t msg2[MSG_2_LEN];
+static uint8_t msg3[MSG_3_LEN];
+static uint8_t key_material[KEY_MATERIAL_LEN];
+static struct gec_sym_key symkey_chan1;
+static struct gec_sym_key symkey_chan2;
+
+static ps_io_ops_t io_ops;
+static ps_chardevice_t serial_device;
+static ps_chardevice_t *serial = NULL;
+
+static ring_buffer_t *ringbuffer_pixhawk = NULL;
+static ring_buffer_t *ringbuffer_telemetry = NULL;
 
 static mavlink_message_t mavlink_message_rx_buffer;
 static mavlink_status_t mavlink_status;
@@ -76,35 +94,6 @@ static void read_from_telemetry(ring_buffer_t *ringbuffer, uint8_t *buf,
   ring_buffer_telemetry_release();
 }
 
-gec_sts_ctx_t ctx;
-struct gec_privkey privkey;
-struct gec_pubkey our_pubkey;
-struct gec_pubkey their_pubkey;
-uint8_t random_data[RANDOM_DATA_LEN];
-uint8_t msg1[MSG_1_LEN];
-uint8_t msg2[MSG_2_LEN];
-uint8_t msg3[MSG_3_LEN];
-uint8_t key_material[KEY_MATERIAL_LEN];
-struct gec_sym_key symkey_chan1;
-struct gec_sym_key symkey_chan2;
-
-static ps_io_ops_t io_ops;
-static ps_chardevice_t serial_device;
-static ps_chardevice_t *serial = NULL;
-
-void pre_init() {
-  int error;
-  ring_buffer_t *rb;
-
-  error = camkes_io_ops(&io_ops);
-  ZF_LOGF_IF(error, "Failed to initialise IO ops");
-
-  serial = ps_cdev_init(TELEMETRY_PORT_NUMBER, &io_ops, &serial_device);
-  if (serial == NULL) {
-    ZF_LOGF("Failed to initialise char device");
-  }
-}
-
 static void print_secretkey(ed25519_secret_key sk) {
   puts("ed25519_secretkey");
   for (int i = 0; i < 32; i++) {
@@ -164,7 +153,7 @@ static void print_msg(uint8_t *msg, int no) {
   puts("====================================");
 }
 
-void print_key_material(uint8_t *km) {
+static void print_key_material(uint8_t *km) {
   puts("====================================");
   puts("Key material");
   for (int i = 0; i < KEY_MATERIAL_LEN; i++) {
@@ -176,15 +165,11 @@ void print_key_material(uint8_t *km) {
   puts("====================================");
 }
 
-int run(void) {
-  LOG_ERROR("In run");
-
-  ring_buffer_t *ringbuffer_pixhawk = (ring_buffer_t *)ring_buffer_pixhawk;
-  ring_buffer_t *ringbuffer_telemetry = (ring_buffer_t *)ring_buffer_telemetry;
+static unsigned int seed_from_uav() {
   mavlink_message_t msg;
-  float yaw;
+  int16_t pressure;
   uint16_t voltages[10];
-  bool got_attitude = false;
+  bool got_pressure = false;
   bool got_voltage = false;
   unsigned int seed;
 
@@ -193,10 +178,10 @@ int run(void) {
     read_message(ringbuffer_pixhawk, &msg);
 
     switch (msg.msgid) {
-    case MAVLINK_MSG_ID_AHRS2:
-      if (!got_attitude) {
-        yaw = mavlink_msg_attitude_get_yaw(&msg);
-        got_attitude = true;
+    case MAVLINK_MSG_ID_RAW_PRESSURE:
+      if (!got_pressure) {
+        pressure = mavlink_msg_raw_pressure_get_press_abs(&msg);
+        got_pressure = true;
       }
       break;
     case MAVLINK_MSG_ID_BATTERY_STATUS:
@@ -208,43 +193,78 @@ int run(void) {
     default:
       break;
     }
-  } while (!got_attitude && !got_voltage);
+  } while (!got_pressure && !got_voltage);
 
-  seed = (unsigned int)(yaw * M_1_PI * 180 * 100) * voltages[0];
-  // seed = voltages[0];
+  seed = pressure * voltages[0];
+
+  return seed;
+}
+
+void pre_init() {
+  int error;
+  ring_buffer_t *rb;
+
+  error = camkes_io_ops(&io_ops);
+  ZF_LOGF_IF(error, "Failed to initialise IO ops");
+
+  serial = ps_cdev_init(TELEMETRY_PORT_NUMBER, &io_ops, &serial_device);
+  if (serial == NULL) {
+    ZF_LOGF("Failed to initialise char device");
+  }
+}
+
+int run(void) {
+  // LOG_ERROR("In run");
+
+  ring_buffer_t *ringbuffer_pixhawk = (ring_buffer_t *)ring_buffer_pixhawk;
+  ring_buffer_t *ringbuffer_telemetry = (ring_buffer_t *)ring_buffer_telemetry;
+
+  unsigned int seed;
+
+  seed = seed_from_uav();
   LOG_ERROR("seed: %u", seed);
   srand(seed);
 
   for (int i = 0; i < RANDOM_DATA_LEN; i++) {
-    random_data[i] = (uint8_t)rand();
+    random_data[i] = rand();
   }
 
+  // Generate key pair
   LOG_ERROR("generate");
   generate(&our_pubkey, &privkey, random_data);
-
   print_pubkey(&our_pubkey);
-
   LOG_ERROR("generate finished");
 
+  // Wait for Party A's public key,
+  // because Party A is the initiator.
   LOG_ERROR("Read their pubkey");
   read_from_telemetry(ringbuffer_telemetry, (uint8_t *)&their_pubkey,
                       sizeof(their_pubkey));
 
   print_pubkey(&their_pubkey);
 
+  /**
+   * Key Exchange start
+   */
+
   LOG_ERROR("init_context");
   init_context(&ctx, &our_pubkey, &privkey, &their_pubkey);
 
   // Send public key to GCS
   LOG_ERROR("Send public key to GCS");
-  // serial_send((uint8_t *)&our_pubkey.pub, sizeof(our_pubkey));
   ps_cdev_write(serial, &our_pubkey, sizeof(our_pubkey), NULL, NULL);
 
+  // Party B's step 1
   LOG_ERROR("Read MSG 1");
   read_from_telemetry(ringbuffer_telemetry, msg1, sizeof(msg1));
 
   print_msg(msg1, 1);
 
+  for (int i = 0; i < RANDOM_DATA_LEN; i++) {
+    random_data[i] = rand();
+  }
+
+  // Party B's step 2
   LOG_ERROR("respond_sts");
   if (respond_sts(msg1, msg2, &ctx, random_data)) {
     LOG_ERROR("respond_sts failed");
@@ -260,15 +280,18 @@ int run(void) {
 
   print_msg(msg3, 3);
 
+  // Party B's step 3
   LOG_ERROR("finish_sts");
   if (finish_sts(msg3, &ctx, key_material)) {
     LOG_ERROR("finish_sts failed");
-    ;
   }
+
+  /**
+   * Key Exchange finished
+   */
 
   print_key_material(key_material);
 
-  // Key exchange complete
   gec_key_material_to_2_channels(&symkey_chan1, &symkey_chan2, key_material);
 
   LOG_ERROR("Send keys to decrypt/encrypt");
@@ -279,6 +302,10 @@ int run(void) {
   switch_pixhawk_switch_ringbuffer();
   switch_telemetry_switch_ringbuffer();
 
-  LOG_ERROR("Out run");
+  // This is a one-shot component.
+  // So it needs to exit, instead of stalling
+  // in an infinite loop.
+
+  // LOG_ERROR("Out run");
   return 0;
 }

@@ -3,13 +3,11 @@ import "../../interfaces/pixhawk.idl4";
 import "../../interfaces/key.idl4";
 import "../../interfaces/ringbuffer.idl4";
 
+// RX only
 component Pixhawk {
     include "my_type.h";
 
     control;
-
-    // provides pixhawk serial;
-    // dataport Buf(4096) port;
 
     dataport Buf(4096) gpiohw_mem;
     emits Dummy dummy_source;

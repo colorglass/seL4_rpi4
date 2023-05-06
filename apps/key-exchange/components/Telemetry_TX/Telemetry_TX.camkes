@@ -1,13 +1,16 @@
 import "../GPIO/GPIO.camkes";
 import "../../interfaces/telemetry.idl4";
 
+// TX only, no control thread
 component Telemetry_TX {
+    // Interface for output
+    provides telemetry serial;
+    dataport Buf(4096) port;
+
     dataport Buf(4096) gpiohw_mem;
     emits Dummy dummy_source;
     consumes Dummy serial_dev;
 
-    provides telemetry serial;
-    dataport Buf(4096) port;
 
     composition {
         component GPIOHW gpio_hw;

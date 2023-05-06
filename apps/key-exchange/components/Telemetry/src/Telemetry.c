@@ -41,17 +41,6 @@ void pre_init() {
   // LOG_ERROR("Out pre_init");
 }
 
-void serial__init() {}
-
-uint8_t serial_send(const telemetry_buf_t *buf, uint32_t len) {
-  // LOG_ERROR("Send len: %u", len);
-  uint8_t err = ps_cdev_write(serial, (void *)buf->buf, len, NULL, NULL) != len;
-  if (err) {
-    LOG_ERROR("Write not completed");
-  }
-  return err;
-}
-
 void switch__init() {}
 
 void switch_switch_ringbuffer() { use_ringbuffer_key = 0; }

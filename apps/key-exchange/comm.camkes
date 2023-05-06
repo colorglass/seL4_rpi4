@@ -13,20 +13,24 @@ import "components/Telemetry_TX/Telemetry_TX.camkes";
 
 assembly {
     composition {
-        component Pixhawk   pixhawk;
-        component Telemetry telemetry;
-        component Decrypt   decrypt;
-        component Encrypt   encrypt;
-        component KeyExchange key_exchange;
-        component Pixhawk_TX pixhawk_tx;
-        component Telemetry_TX telemetry_tx;
+        component Pixhawk       pixhawk;
+        component Telemetry     telemetry;
+        component Decrypt       decrypt;
+        component Encrypt       encrypt;
+        component KeyExchange   key_exchange;
+        component Pixhawk_TX    pixhawk_tx;
+        component Telemetry_TX  telemetry_tx;
 
 
+        // Shared memory for keeping received data, in actual communications.
         connection seL4SharedData   dataport_pixhawk_to_encrypt         (from pixhawk.ring_buffer,      to encrypt.ring_buffer);
         connection seL4SharedData   dataport_telem_to_decrypt           (from telemetry.ring_buffer,    to decrypt.ring_buffer);
 
+
+        // Shared memory for keeping received data, in key exchange.
         connection seL4SharedData   dataport_pixhawk_to_keyexchange     (from pixhawk.ring_buffer_key,  to key_exchange.ring_buffer_pixhawk);
         connection seL4SharedData   dataport_telem_to_keyexchange       (from telemetry.ring_buffer_key,to key_exchange.ring_buffer_telemetry);
+
 
         // Encrypt => Telemetry
         connection seL4RPCCall      rpccall_encrypt_to_telemetry        (from encrypt.telem,            to telemetry_tx.serial);
@@ -36,16 +40,9 @@ assembly {
         connection seL4RPCCall      rpccall_decrypt_to_pixhawk          (from decrypt.pixhawk,          to pixhawk_tx.serial);
         connection seL4SharedData   dataport_decrypt_to_pixhawk         (from decrypt.port,             to pixhawk_tx.port);
 
-        /**
-         * Key Exchange sends public keys and messages to GCS
-         */
-
-        // Key Exchange => Telemetry
-        // connection seL4RPCCall      rpccall_keyexchange_to_telemetry    (from key_exchange.serial,      to telemetry.serial);
-        // connection seL4SharedData   dataport_keyexchange_to_telemetry   (from key_exchange.port_key,    to telemetry.port_key);
 
         /**
-         * Key Exchange gives established keys to Encrypt/Decrypt
+         * Key Exchange gives established symmetric keys to Encrypt/Decrypt
          */
 
         // Key Exchange => Encrypt
@@ -56,8 +53,10 @@ assembly {
         connection seL4RPCCall      rpccall_keyexchange_to_decrypt      (from key_exchange.key_decrypt, to decrypt.key);
         connection seL4SharedData   dataport_keyexchange_to_decrypt     (from key_exchange.port_key_decrypt, to decrypt.port_key);
 
+
         /**
-         * Key Exchange tells Pixhawk and Telemetry to switch ringbuffer
+         * Key Exchange tells Pixhawk and Telemetry to switch ringbuffer.
+         * Stop key exchange and start actual communication.
          */
 
         // Key Exchange => Pixhawk
@@ -68,25 +67,30 @@ assembly {
     }
 
     configuration {
+        // CPU binding (Changing them MIGHT cause faults)
         pixhawk.affinity        = 3;
         telemetry.affinity      = 1;
         decrypt.affinity        = 2;
         encrypt.affinity        = 2;
         key_exchange.affinity   = 0;
+        pixhawk_tx.affinity     = 0;
+        telemetry_tx.affinity   = 0;
 
+        // Component thread priority. MUST be the same.
         pixhawk.priority        = HIGHEST_PRIORITY;
         telemetry.priority      = HIGHEST_PRIORITY;
         decrypt.priority        = HIGHEST_PRIORITY;
         encrypt.priority        = HIGHEST_PRIORITY;
         key_exchange.priority   = HIGHEST_PRIORITY;
-        telemetry_tx.priority   = HIGHEST_PRIORITY;
         pixhawk_tx.priority     = HIGHEST_PRIORITY;
+        telemetry_tx.priority   = HIGHEST_PRIORITY;
 
+        // Lower than 32KB would cause stack overflow
         key_exchange._stack_size = 128 * 1024; // 128 KiB
 
+        // Use userspace memory in RPCCall marshalling, for better performance.
         rpccall_encrypt_to_telemetry.buffer     = "dataport_encrypt_to_telemetry";
         rpccall_decrypt_to_pixhawk.buffer       = "dataport_decrypt_to_pixhawk";
-        // rpccall_keyexchange_to_telemetry.buffer = "dataport_keyexchange_to_telemetry";
         rpccall_keyexchange_to_encrypt.buffer   = "dataport_keyexchange_to_encrypt";
         rpccall_keyexchange_to_decrypt.buffer   = "dataport_keyexchange_to_decrypt";
     }

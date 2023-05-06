@@ -23,6 +23,9 @@ typedef struct ring_buffer {
 #define MAVLINK_MAX_FRAME_LEN 280
 
 
+/**
+ * Used by Pixhawk/Telemetry TX RPCCall
+ */
 typedef struct pixhawk_buf {
     uint8_t buf[MAVLINK_MAX_FRAME_LEN];
 } pixhawk_buf_t;
@@ -113,12 +116,6 @@ typedef struct _queue {
         } \
         LOG_ERROR("%s", _str); \
     })
-
-#define print_serial(s) { \
-    for (int i=0; s[i]; i++) { \
-        ps_cdev_putchar(serial, s[i]); \
-    } \
-}
 
 
 #endif

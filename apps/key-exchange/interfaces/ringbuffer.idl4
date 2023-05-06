@@ -1,3 +1,5 @@
+// Called from key-exchange.
+// Instruct pixhawk/telemetry to switch ringbuffer.
 procedure ringbuffer {
     void switch_ringbuffer();
 }

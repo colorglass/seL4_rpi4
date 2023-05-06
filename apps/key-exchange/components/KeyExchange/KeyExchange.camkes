@@ -1,4 +1,3 @@
-// import "../../interfaces/serial.idl4";
 import "../../interfaces/key.idl4";
 import "../../interfaces/ringbuffer.idl4";
 import "../GPIO/GPIO.camkes";
@@ -8,17 +7,16 @@ component KeyExchange {
 
     control;
 
-    // uses serial serial;
-    // dataport Buf(4096) port_key;
-
     dataport ring_buffer_t ring_buffer_pixhawk;
     dataport ring_buffer_t ring_buffer_telemetry;
 
+    // Give keys to encrypt/decrypt
     uses key key_encrypt;
     dataport Buf(8192) port_key_encrypt;
     uses key key_decrypt;
     dataport Buf(8192) port_key_decrypt;
 
+    // Tell pixhawk/telemetry to switch ringbuffer
     uses ringbuffer switch_pixhawk;
     uses ringbuffer switch_telemetry;
 
