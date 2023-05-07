@@ -76,19 +76,19 @@ void pre_init() {
 int run(void) {
   ZF_LOGE("In run");
 
+  ring_buffer_t *ringbuffer = (ring_buffer_t *)ring_buffer;
+  uint32_t head, tail;
+
+  head = ringbuffer->head;
+  ring_buffer_acquire();
+
   while (1) {
-    ring_buffer_t *ringbuffer = (ring_buffer_t *)ring_buffer;
-    uint32_t head, tail;
-    head = ringbuffer->head;
-    ring_buffer_acquire();
     tail = ringbuffer->tail;
     ring_buffer_acquire();
-    if (head != tail) {
+    while (head != tail) {
       handle_char(ringbuffer->buffer[head]);
       ring_buffer_acquire();
       head = (head + 1) % sizeof(ringbuffer->buffer);
-      ringbuffer->head = head;
-      ring_buffer_release();
     }
   }
   return 0;

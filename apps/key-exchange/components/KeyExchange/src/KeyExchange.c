@@ -260,7 +260,6 @@ int run(void) {
   LOG_ERROR("Send public key to GCS");
   ps_cdev_write(serial, &our_pubkey, sizeof(our_pubkey), NULL, NULL);
 
-  // Party B's step 1
   LOG_ERROR("Read MSG 1");
   read_from_telemetry(ringbuffer_telemetry, msg1, sizeof(msg1));
 
@@ -270,7 +269,7 @@ int run(void) {
     random_data[i] = rand();
   }
 
-  // Party B's step 2
+  // Party B's step 1
   LOG_ERROR("respond_sts");
   if (respond_sts(msg1, msg2, &ctx, random_data)) {
     LOG_ERROR("respond_sts failed");
@@ -286,7 +285,7 @@ int run(void) {
 
   print_msg(msg3, 3);
 
-  // Party B's step 3
+  // Party B's step 2
   LOG_ERROR("finish_sts");
   if (finish_sts(msg3, &ctx, key_material)) {
     LOG_ERROR("finish_sts failed");
