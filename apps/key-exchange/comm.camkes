@@ -18,8 +18,8 @@ assembly {
         component Decrypt       decrypt;
         component Encrypt       encrypt;
         component KeyExchange   key_exchange;
-        component Pixhawk_TX    pixhawk_tx;
-        component Telemetry_TX  telemetry_tx;
+        // component Pixhawk_TX    pixhawk_tx;
+        // component Telemetry_TX  telemetry_tx;
 
 
         // Shared memory for keeping received data, in actual communications.
@@ -33,12 +33,12 @@ assembly {
 
 
         // Encrypt => Telemetry
-        connection seL4RPCCall      rpccall_encrypt_to_telemetry        (from encrypt.telem,            to telemetry_tx.serial);
-        connection seL4SharedData   dataport_encrypt_to_telemetry       (from encrypt.port,             to telemetry_tx.port);
+        // connection seL4RPCCall      rpccall_encrypt_to_telemetry        (from encrypt.telem,            to telemetry_tx.serial);
+        // connection seL4SharedData   dataport_encrypt_to_telemetry       (from encrypt.port,             to telemetry_tx.port);
 
         // Decrypt => Pixhawk
-        connection seL4RPCCall      rpccall_decrypt_to_pixhawk          (from decrypt.pixhawk,          to pixhawk_tx.serial);
-        connection seL4SharedData   dataport_decrypt_to_pixhawk         (from decrypt.port,             to pixhawk_tx.port);
+        // connection seL4RPCCall      rpccall_decrypt_to_pixhawk          (from decrypt.pixhawk,          to pixhawk_tx.serial);
+        // connection seL4SharedData   dataport_decrypt_to_pixhawk         (from decrypt.port,             to pixhawk_tx.port);
 
 
         /**
@@ -73,8 +73,8 @@ assembly {
         decrypt.affinity        = 2;
         encrypt.affinity        = 2;
         key_exchange.affinity   = 0;
-        pixhawk_tx.affinity     = 0;
-        telemetry_tx.affinity   = 0;
+        // pixhawk_tx.affinity     = 0;
+        // telemetry_tx.affinity   = 0;
 
         // Component thread priority. MUST be the same.
         pixhawk.priority        = HIGHEST_PRIORITY;
@@ -82,8 +82,8 @@ assembly {
         decrypt.priority        = HIGHEST_PRIORITY;
         encrypt.priority        = HIGHEST_PRIORITY;
         key_exchange.priority   = HIGHEST_PRIORITY;
-        pixhawk_tx.priority     = HIGHEST_PRIORITY;
-        telemetry_tx.priority   = HIGHEST_PRIORITY;
+        // pixhawk_tx.priority     = HIGHEST_PRIORITY;
+        // telemetry_tx.priority   = HIGHEST_PRIORITY;
 
         // Lower than 32KB would cause stack overflow
         key_exchange._stack_size = 128 * 1024; // 128 KiB

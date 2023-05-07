@@ -9,8 +9,8 @@ component Encrypt {
     dataport ring_buffer_t ring_buffer;
 
     // Output through telemetry
-    uses telemetry telem;
-    dataport Buf(4096) port;
+    // uses telemetry telem;
+    // dataport Buf(4096) port;
 
     // Get key from key-exchange
     provides key key;

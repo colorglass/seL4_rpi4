@@ -11,8 +11,8 @@ component Decrypt {
     dataport ring_buffer_t ring_buffer;
 
     // Output through pixhawk uart
-    uses pixhawk pixhawk;
-    dataport Buf(4096) port;
+    // uses pixhawk pixhawk;
+    // dataport Buf(4096) port;
 
     // Get key from key-exchange
     provides key key;

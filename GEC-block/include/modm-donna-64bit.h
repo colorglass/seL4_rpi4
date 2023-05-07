@@ -62,10 +62,8 @@ reduce256_modm(bignum256modm r) {
 	r[4] ^= mask & (r[4] ^ t[4]);
 }
 
-#include "utils/util.h"
 static void
 barrett_reduce256_modm(bignum256modm r, const bignum256modm q1, const bignum256modm r1) {
-	LOG_ERROR("In barrett_reduce256_modm");
 	bignum256modm q3, r2;
 	uint128_t c, mul;
 	bignum256modm_element_t f, b, pb;
@@ -104,7 +102,6 @@ barrett_reduce256_modm(bignum256modm r, const bignum256modm q1, const bignum256m
 	pb += r2[3]; b = lt_modm(r1[3], pb); r[3] = (r1[3] - pb + (b << 56)); pb = b;
 	pb += r2[4]; b = lt_modm(r1[4], pb); r[4] = (r1[4] - pb + (b << 40)); 
 
-	LOG_ERROR("Before reduce256_modm");
 	reduce256_modm(r);
 	reduce256_modm(r);
 }
@@ -186,9 +183,7 @@ expand256_modm(bignum256modm out, const unsigned char *in, size_t len) {
 	q1[3] = ((x[ 6] >> 32) | (x[ 7] << 32)) & 0xffffffffffffff;
 	q1[4] = ((x[ 7] >> 24)                );
 
-	LOG_ERROR("Before barrett_reduce256_modm");
 	barrett_reduce256_modm(out, q1, out);
-	LOG_ERROR("After barrett_reduce256_modm");
 }
 
 static void

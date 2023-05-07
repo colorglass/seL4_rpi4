@@ -64,7 +64,7 @@ static void read_message(ring_buffer_t *ringbuffer, mavlink_message_t *r_msg) {
     while (head != tail) {
       result = my_mavlink_parse_char(ringbuffer->buffer[head], r_msg, &status);
       ring_buffer_pixhawk_acquire();
-      if (result) {
+      if (result == MAVLINK_FRAMING_OK) {
         return;
       }
       head = (head + 1) % sizeof(ringbuffer->buffer);
@@ -167,9 +167,9 @@ static void print_key_material(uint8_t *km) {
 
 static unsigned int seed_from_uav() {
   mavlink_message_t msg;
-  int16_t pressure;
+  float pitchspeed;
   uint16_t voltages[10];
-  bool got_pressure = false;
+  bool got_pitchspeed = false;
   bool got_voltage = false;
   unsigned int seed;
 
@@ -178,24 +178,30 @@ static unsigned int seed_from_uav() {
     read_message(ringbuffer_pixhawk, &msg);
 
     switch (msg.msgid) {
-    case MAVLINK_MSG_ID_RAW_PRESSURE:
-      if (!got_pressure) {
-        pressure = mavlink_msg_raw_pressure_get_press_abs(&msg);
-        got_pressure = true;
+    case MAVLINK_MSG_ID_ATTITUDE:
+      if (!got_pitchspeed) {
+        pitchspeed = mavlink_msg_attitude_get_pitchspeed(&msg);
+        if (fabsf(pitchspeed) > 0.00000001f) {
+          got_pitchspeed = true;
+        }
       }
       break;
     case MAVLINK_MSG_ID_BATTERY_STATUS:
       if (!got_voltage) {
         mavlink_msg_battery_status_get_voltages(&msg, voltages);
-        got_voltage = true;
+        if (voltages[0] != 0) {
+          got_voltage = true;
+        }
       }
       break;
     default:
       break;
     }
-  } while (!got_pressure && !got_voltage);
+  } while (!got_pitchspeed && !got_voltage);
 
-  seed = pressure * voltages[0];
+  LOG_ERROR("pitchspeed: %.8f, voltage: %u", pitchspeed, voltages[0]);
+
+  seed = ((unsigned int)(fabs(pitchspeed) * 1e10)) * voltages[0];
 
   return seed;
 }
@@ -216,8 +222,8 @@ void pre_init() {
 int run(void) {
   // LOG_ERROR("In run");
 
-  ring_buffer_t *ringbuffer_pixhawk = (ring_buffer_t *)ring_buffer_pixhawk;
-  ring_buffer_t *ringbuffer_telemetry = (ring_buffer_t *)ring_buffer_telemetry;
+  ringbuffer_pixhawk = (ring_buffer_t *)ring_buffer_pixhawk;
+  ringbuffer_telemetry = (ring_buffer_t *)ring_buffer_telemetry;
 
   unsigned int seed;
 

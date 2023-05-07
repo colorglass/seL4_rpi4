@@ -172,13 +172,13 @@ int run(void) {
                   msg.seq, msg.msgid, msg.sysid, msg.compid);
         len = mavlink_msg_to_send_buffer(buf.buf, &msg);
 
-        if (pixhawk_send(&buf, len)) {
-          LOG_ERROR("Send failed");
-        }
-
-        // if (ps_cdev_write(serial, buf.buf, len, NULL, NULL) != len) {
-        //   LOG_ERROR("Write not completed");
+        // if (pixhawk_send(&buf, len)) {
+        //   LOG_ERROR("Send failed");
         // }
+
+        if (ps_cdev_write(serial, buf.buf, len, NULL, NULL) != len) {
+          LOG_ERROR("Write not completed");
+        }
       }
     }
   }
