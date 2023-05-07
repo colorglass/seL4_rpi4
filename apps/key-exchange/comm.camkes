@@ -70,7 +70,7 @@ assembly {
         // CPU binding (Changing them MIGHT cause faults)
         pixhawk.affinity        = 3;
         telemetry.affinity      = 1;
-        decrypt.affinity        = 2;
+        decrypt.affinity        = 0;
         encrypt.affinity        = 2;
         key_exchange.affinity   = 0;
         // pixhawk_tx.affinity     = 0;

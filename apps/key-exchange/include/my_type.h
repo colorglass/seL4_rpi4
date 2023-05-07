@@ -7,6 +7,9 @@
 #include "gec.h"
 #include <utils/util.h>
 
+#undef LOG_ERROR
+#define LOG_ERROR(...)
+
 
 #define TELEMETRY_PORT_NUMBER   PS_SERIAL3
 #define UART_PORT_NUMBER        PS_SERIAL5
