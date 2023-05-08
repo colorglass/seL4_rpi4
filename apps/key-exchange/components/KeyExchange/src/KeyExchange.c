@@ -15,8 +15,17 @@
 #include "my_type.h"
 
 static gec_sts_ctx_t ctx;
-static struct gec_privkey privkey;
+static uint8_t our_keypair_seed[RANDOM_DATA_LEN] = {
+    1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16,
+    17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
+};
+static uint8_t their_keypair_seed[RANDOM_DATA_LEN] = {
+    32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17,
+    16, 15, 14, 13, 12, 11, 10, 9,  8,  7,  6,  5,  4,  3,  2,  1,
+};
+static struct gec_privkey our_privkey;
 static struct gec_pubkey our_pubkey;
+static struct gec_privkey their_privkey;
 static struct gec_pubkey their_pubkey;
 static uint8_t random_data[RANDOM_DATA_LEN];
 static uint8_t msg1[MSG_1_LEN];
@@ -227,26 +236,16 @@ int run(void) {
 
   unsigned int seed;
 
+  // Prepare random number generator
   seed = seed_from_uav();
   LOG_ERROR("seed: %u", seed);
   srand(seed);
 
-  for (int i = 0; i < RANDOM_DATA_LEN; i++) {
-    random_data[i] = rand();
-  }
-
   // Generate key pair
-  LOG_ERROR("generate");
-  generate(&our_pubkey, &privkey, random_data);
+  generate(&our_pubkey, &our_privkey, our_keypair_seed);
   print_pubkey(&our_pubkey);
-  LOG_ERROR("generate finished");
 
-  // Wait for Party A's public key,
-  // because Party A is the initiator.
-  LOG_ERROR("Read their pubkey");
-  read_from_telemetry(ringbuffer_telemetry, (uint8_t *)&their_pubkey,
-                      sizeof(their_pubkey));
-
+  generate(&their_pubkey, &their_privkey, their_keypair_seed);
   print_pubkey(&their_pubkey);
 
   /**
@@ -254,11 +253,7 @@ int run(void) {
    */
 
   LOG_ERROR("init_context");
-  init_context(&ctx, &our_pubkey, &privkey, &their_pubkey);
-
-  // Send public key to GCS
-  LOG_ERROR("Send public key to GCS");
-  ps_cdev_write(serial, &our_pubkey, sizeof(our_pubkey), NULL, NULL);
+  init_context(&ctx, &our_pubkey, &our_privkey, &their_pubkey);
 
   LOG_ERROR("Read MSG 1");
   read_from_telemetry(ringbuffer_telemetry, msg1, sizeof(msg1));
