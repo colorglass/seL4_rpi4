@@ -41,9 +41,22 @@ void pre_init() {
   // LOG_ERROR("Out pre_init");
 }
 
-void switch__init() {}
+// void switch__init() {}
 
-void switch_switch_ringbuffer() { use_ringbuffer_key = 0; }
+// void switch_switch_ringbuffer() { use_ringbuffer_key = 0; }
+
+void switch_callback(void *arg) {
+  use_ringbuffer_key = 0;
+  if (switch_reg_callback(switch_callback, NULL)) {
+    LOG_ERROR("Failed to register callback");
+  }
+}
+
+void switch__init() {
+  if (switch_reg_callback(switch_callback, NULL)) {
+    LOG_ERROR("Failed to register callback");
+  }
+}
 
 int run(void) {
   // ZF_LOGE("In run");

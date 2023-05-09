@@ -299,8 +299,10 @@ int run(void) {
   key_encrypt_send(&symkey_chan2);
 
   LOG_ERROR("Switch ringbuffer");
-  switch_pixhawk_switch_ringbuffer();
-  switch_telemetry_switch_ringbuffer();
+  // switch_pixhawk_switch_ringbuffer();
+  // switch_telemetry_switch_ringbuffer();
+  switch_pixhawk_emit();
+  switch_telemetry_emit();
 
   // This is a one-shot component.
   // So it needs to exit, instead of stalling

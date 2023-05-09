@@ -16,7 +16,8 @@ component Pixhawk {
     dataport ring_buffer_t ring_buffer;
     dataport ring_buffer_t ring_buffer_key;
 
-    provides ringbuffer switch;
+    // provides ringbuffer switch;
+    consumes SwitchRingbuffer switch;
 
     composition {
         component GPIOHW gpio_hw;

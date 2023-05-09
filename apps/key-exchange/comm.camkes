@@ -28,8 +28,8 @@ assembly {
 
 
         // Shared memory for keeping received data, in key exchange.
-        connection seL4SharedData   dataport_pixhawk_to_keyexchange     (from pixhawk.ring_buffer_key,  to key_exchange.ring_buffer_pixhawk);
-        connection seL4SharedData   dataport_telem_to_keyexchange       (from telemetry.ring_buffer_key,to key_exchange.ring_buffer_telemetry);
+        connection seL4SharedData   dataport_pixhawk_to_keyexchange     (from pixhawk.ring_buffer_key,      to key_exchange.ring_buffer_pixhawk);
+        connection seL4SharedData   dataport_telem_to_keyexchange       (from telemetry.ring_buffer_key,    to key_exchange.ring_buffer_telemetry);
 
 
         // Encrypt => Telemetry
@@ -46,12 +46,12 @@ assembly {
          */
 
         // Key Exchange => Encrypt
-        connection seL4RPCCall      rpccall_keyexchange_to_encrypt      (from key_exchange.key_encrypt, to encrypt.key);
-        connection seL4SharedData   dataport_keyexchange_to_encrypt     (from key_exchange.port_key_encrypt, to encrypt.port_key);
+        connection seL4RPCCall      rpccall_keyexchange_to_encrypt      (from key_exchange.key_encrypt,         to encrypt.key);
+        connection seL4SharedData   dataport_keyexchange_to_encrypt     (from key_exchange.port_key_encrypt,    to encrypt.port_key);
 
         // Key Exchange => Decrypt
-        connection seL4RPCCall      rpccall_keyexchange_to_decrypt      (from key_exchange.key_decrypt, to decrypt.key);
-        connection seL4SharedData   dataport_keyexchange_to_decrypt     (from key_exchange.port_key_decrypt, to decrypt.port_key);
+        connection seL4RPCCall      rpccall_keyexchange_to_decrypt      (from key_exchange.key_decrypt,         to decrypt.key);
+        connection seL4SharedData   dataport_keyexchange_to_decrypt     (from key_exchange.port_key_decrypt,    to decrypt.port_key);
 
 
         /**
@@ -60,10 +60,10 @@ assembly {
          */
 
         // Key Exchange => Pixhawk
-        connection seL4RPCCall      rpccall_keyexchange_to_pixhawk_switch   (from key_exchange.switch_pixhawk, to pixhawk.switch);
+        connection seL4Notification notification_keyexchange_to_pixhawk_switch   (from key_exchange.switch_pixhawk,     to pixhawk.switch);
 
         // Key Exchange => Telemetry
-        connection seL4RPCCall      rpccall_keyexchange_to_telemetry_switch (from key_exchange.switch_telemetry, to telemetry.switch);
+        connection seL4Notification notification_keyexchange_to_telemetry_switch (from key_exchange.switch_telemetry,   to telemetry.switch);
     }
 
     configuration {

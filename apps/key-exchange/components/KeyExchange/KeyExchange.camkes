@@ -17,8 +17,10 @@ component KeyExchange {
     dataport Buf(8192) port_key_decrypt;
 
     // Tell pixhawk/telemetry to switch ringbuffer
-    uses ringbuffer switch_pixhawk;
-    uses ringbuffer switch_telemetry;
+    // uses ringbuffer switch_pixhawk;
+    // uses ringbuffer switch_telemetry;
+    emits SwitchRingbuffer switch_pixhawk;
+    emits SwitchRingbuffer switch_telemetry;
 
     dataport Buf(4096) gpiohw_mem;
     emits Dummy dummy_source;
