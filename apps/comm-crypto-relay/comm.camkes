@@ -10,10 +10,10 @@ import "components/Encrypt/Encrypt.camkes";
 
 assembly {
     composition {
-        component Pixhawk_RX pixhawk_rx;
-        component Telemetry_RX telem_rx;
-        component Decrypt decrypt;
-        component Encrypt encrypt;
+        component Pixhawk_RX    pixhawk_rx;
+        component Telemetry_RX  telem_rx;
+        component Decrypt       decrypt;
+        component Encrypt       encrypt;
 
         connection seL4SharedData   dataport_pixhawk_to_encrypt     (from pixhawk_rx.ring_buffer,   to encrypt.ring_buffer);
         connection seL4SharedData   dataport_telem_to_decrypt       (from telem_rx.ring_buffer,     to decrypt.ring_buffer);

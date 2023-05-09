@@ -39,13 +39,13 @@ int run(void) {
   int c;
   ring_buffer_t *rb = (ring_buffer_t *)ring_buffer;
   uint32_t tail;
+  tail = rb->tail;
+  ring_buffer_acquire();
 
   while (1) {
     while ((c = ps_cdev_getchar(serial)) == EOF) {
     }
 
-    tail = rb->tail;
-    ring_buffer_acquire();
     rb->buffer[tail] = c;
     ring_buffer_release();
     tail = (tail + 1) % RING_BUFFER_SIZE;

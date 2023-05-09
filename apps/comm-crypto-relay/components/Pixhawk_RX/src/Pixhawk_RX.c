@@ -10,7 +10,7 @@ static ps_chardevice_t serial_device;
 static ps_chardevice_t *serial = NULL;
 
 void pre_init() {
-  ZF_LOGE("In pre_init");
+  LOG_ERROR("In pre_init");
   int error;
   ring_buffer_t *rb;
 
@@ -32,18 +32,21 @@ void pre_init() {
 }
 
 int run(void) {
-  ZF_LOGE("In run");
+  LOG_ERROR("In run");
 
   int c;
   uint32_t tail;
-  ring_buffer_t *rb = (ring_buffer_t *)ring_buffer;
+  ring_buffer_t *rb;
+
+  rb = (ring_buffer_t *)ring_buffer;
+
+  tail = rb->tail;
+  ring_buffer_acquire();
 
   while (1) {
     while ((c = ps_cdev_getchar(serial)) == EOF) {
     }
 
-    tail = rb->tail;
-    ring_buffer_acquire();
     rb->buffer[tail] = c;
     ring_buffer_release();
     tail = (tail + 1) % RING_BUFFER_SIZE;

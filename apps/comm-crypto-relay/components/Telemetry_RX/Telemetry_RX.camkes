@@ -1,13 +1,13 @@
 import "../GPIO/GPIO.camkes";
 
 component Telemetry_RX {
+    include "my_type.h";
     control;
 
     dataport Buf(4096) gpiohw_mem;
     emits Dummy dummy_source;
     consumes Dummy serial_dev;
 
-    include "my_type.h";
     dataport ring_buffer_t ring_buffer;
 
     composition {

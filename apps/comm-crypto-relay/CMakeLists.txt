@@ -87,6 +87,8 @@ set(KernelMaxNumNodes 4 CACHE STRING "" FORCE)
 # Serial output relies on Debug settings
 ApplyCommonReleaseVerificationSettings(FALSE FALSE)
 
+set(LibUtilsDefaultZfLogLevel 6)
+
 project(comm C)
 
 find_package(camkes-tool REQUIRED)
