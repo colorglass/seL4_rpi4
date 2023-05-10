@@ -43,25 +43,8 @@ static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
     LOG_ERROR("MAVLink message parse error: Bad signature");
   }
 
-  // recalc_checksum(r_message, r_mavlink_status);
-
   return msg_received;
 }
-
-// static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
-//                                      mavlink_status_t *r_mavlink_status) {
-//   uint8_t msg_received =
-//       mavlink_frame_char_buffer(&mavlink_message_rx_buffer, &mavlink_status,
-//       c,
-//                                 r_message, r_mavlink_status);
-//   if (msg_received == MAVLINK_FRAMING_BAD_CRC) {
-//     LOG_ERROR("MAVLink message parse error: Bad CRC");
-//   } else if (msg_received == MAVLINK_FRAMING_BAD_SIGNATURE) {
-//     LOG_ERROR("MAVLink message parse error: Bad signature");
-//   }
-
-//   return msg_received;
-// }
 
 static int encrypt_to_frame(const mavlink_message_t *msg) {
   CipherTextFrame_t ct_frame;
@@ -111,7 +94,7 @@ static inline void handle_char(uint8_t c) {
   result = my_mavlink_parse_char(c, &msg, &status);
   if (result) {
     LOG_ERROR(
-        "Message: [SEQ]: %03d, [MSGID]: 0x%06X, [SYSID]: %03d, [COMPID]: %03d",
+        "Message: [SEQ]: %03d, [MSGID]: 0x%03d, [SYSID]: %03d, [COMPID]: %03d",
         msg.seq, msg.msgid, msg.sysid, msg.compid);
 
     encrypt_to_frame(&msg);

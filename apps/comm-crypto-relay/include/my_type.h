@@ -32,7 +32,7 @@ typedef struct CipherTextFrame {
     uint8_t magic;
     uint8_t tag;
     uint8_t ciphertext[GEC_CT_LEN];
-} CipherTextFrame_t;
+} CipherTextFrame_t; 
 
 /*
  * Queue

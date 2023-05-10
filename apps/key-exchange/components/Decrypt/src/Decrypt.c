@@ -14,7 +14,13 @@
 static mavlink_message_t mavlink_message_rx_buffer;
 static mavlink_status_t mavlink_status;
 
+static ps_io_ops_t io_ops;
+static ps_chardevice_t serial_device;
+static ps_chardevice_t *serial = NULL;
+
 static queue_t queue;
+
+static uint32_t head = 0;
 
 static uint8_t key_material[] = {
     0xCB, 0x28, 0x4A, 0xD9, 0x1E, 0x85, 0x78, 0xB1, 0x77, 0x6E, 0x9B, 0x98,
@@ -39,10 +45,6 @@ static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
   return msg_received;
 }
 
-static ps_io_ops_t io_ops;
-static ps_chardevice_t serial_device;
-static ps_chardevice_t *serial = NULL;
-
 void pre_init() {
   // LOG_ERROR("In pre_init");
 
@@ -63,67 +65,68 @@ void pre_init() {
   // LOG_ERROR("Out pre_init");
 }
 
-static int decrypt_to_msg(const CipherTextFrame_t *ct_frame,
-                          mavlink_message_t *ret_msg) {
-  if (ct_frame->magic != GEC_CIPHERTEXT_FRAME_MAGIC) {
-    LOG_ERROR("MAGIC not match: 0x%02X", ct_frame->magic);
-    return 1;
-  }
-  if (ct_frame->tag != GEC_CIPHERTEXT_FRAME_TAG) {
-    LOG_ERROR("TAG not match: 0x%02X", ct_frame->tag);
-    return 1;
-  }
-
-  uint8_t pt[GEC_PT_LEN];
-  if (gec_decrypt(&symkey_chan1, ct_frame->ciphertext, pt)) {
-    LOG_ERROR("Decrypt failed");
-    return 1;
-  }
-
-  mavlink_message_t msg;
-  mavlink_status_t status;
-  int result;
-
-  for (int i = 0; i < GEC_PT_LEN; i++) {
-    result = my_mavlink_parse_char(pt[i], &msg, &status);
-    if (result) {
-      LOG_ERROR(
-          "Message: [SEQ]: %03d, [MSGID]: %03d, [SYSID]: %03d, [COMPID]: %03d",
-          msg.seq, msg.msgid, msg.sysid, msg.compid);
-      *ret_msg = msg;
-      break;
-    }
-  }
-
-  return 0;
-}
-
-static inline void read_ringbuffer(void *buf, uint32_t len) {
-  ring_buffer_t *ringbuffer = (ring_buffer_t *)ring_buffer;
-  uint32_t head, tail;
-  uint8_t *read_buf = (uint8_t *)buf;
-
-  head = ringbuffer->head;
-  ring_buffer_acquire();
-  for (uint32_t i = 0; i < len;) {
-    tail = ringbuffer->tail;
-    ring_buffer_acquire();
-    while (i < len && head != tail) {
-      read_buf[i++] = ringbuffer->buffer[head];
-      ring_buffer_acquire();
-
-      head = (head + 1) % RING_BUFFER_SIZE;
-    }
-  }
-  ringbuffer->head = head;
-  ring_buffer_release();
-}
-
 void key__init() {}
 
 void key_send(const struct gec_sym_key *symkey) {
   symkey_chan1 = *symkey;
   key_ready = 1;
+}
+
+static inline uint8_t read_byte() {
+  ring_buffer_t *ringbuffer = (ring_buffer_t *)ring_buffer;
+  uint32_t tail;
+  uint8_t c;
+
+  do {
+    tail = ringbuffer->tail;
+    ring_buffer_acquire();
+  } while (tail == head);
+
+  c = ringbuffer->buffer[head++];
+  ring_buffer_acquire();
+  head %= RING_BUFFER_SIZE;
+
+  return c;
+}
+
+static inline void read_buffer(void *buf, uint32_t len) {
+  ring_buffer_t *ringbuffer = (ring_buffer_t *)ring_buffer;
+  uint8_t *read_buf = buf;
+  uint32_t tail;
+
+  for (uint32_t i = 0; i < len;) {
+    tail = ringbuffer->tail;
+    ring_buffer_acquire();
+    while (i < len && head != tail) {
+      read_buf[i++] = ringbuffer->buffer[head++];
+      ring_buffer_acquire();
+      head %= RING_BUFFER_SIZE;
+    }
+  }
+}
+
+static inline void read_ciphertext_frame(CipherTextFrame_t *ct_frame) {
+  ring_buffer_t *ringbuffer = (ring_buffer_t *)ring_buffer;
+  uint32_t tail;
+  uint8_t c;
+
+  // Read header, in case of lost data
+  while (1) {
+    c = read_byte();
+    if (c == GEC_CIPHERTEXT_FRAME_MAGIC) {
+      c = read_byte();
+      if (c == GEC_CIPHERTEXT_FRAME_TAG) {
+        ct_frame->magic = GEC_CIPHERTEXT_FRAME_MAGIC;
+        ct_frame->tag = GEC_CIPHERTEXT_FRAME_TAG;
+        break;
+      } else {
+        continue;
+      }
+    }
+  }
+
+  // Read ciphertext
+  read_buffer(ct_frame->ciphertext, sizeof(ct_frame->ciphertext));
 }
 
 int run(void) {
@@ -145,16 +148,16 @@ int run(void) {
   LOG_ERROR("Key ready. Start decryption.");
 
   while (1) {
-    read_ringbuffer(&ct_frame, sizeof(ct_frame));
+    read_ciphertext_frame(&ct_frame);
 
-    if (ct_frame.magic != GEC_CIPHERTEXT_FRAME_MAGIC) {
-      LOG_ERROR("MAGIC not match: 0x%02X", ct_frame.magic);
-      return 1;
-    }
-    if (ct_frame.tag != GEC_CIPHERTEXT_FRAME_TAG) {
-      LOG_ERROR("TAG not match: 0x%02X", ct_frame.tag);
-      return 1;
-    }
+    // if (ct_frame.magic != GEC_CIPHERTEXT_FRAME_MAGIC) {
+    //   LOG_ERROR("MAGIC not match: 0x%02X", ct_frame.magic);
+    //   return 1;
+    // }
+    // if (ct_frame.tag != GEC_CIPHERTEXT_FRAME_TAG) {
+    //   LOG_ERROR("TAG not match: 0x%02X", ct_frame.tag);
+    //   return 1;
+    // }
 
     if (gec_decrypt(&symkey_chan1, ct_frame.ciphertext, pt)) {
       LOG_ERROR("Decrypt failed");

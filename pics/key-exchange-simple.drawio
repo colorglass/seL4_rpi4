@@ -1,10 +1,10 @@
 <mxfile host="65bd71144e">
     <diagram id="tY58X3LhvNvo1phobhJk" name="Page-1">
-        <mxGraphModel dx="1291" dy="916" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="1276" dy="851" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="106" value="" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="1">
+                <mxCell id="106" value="" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=15;" parent="1" vertex="1">
                     <mxGeometry x="825.62" y="160" width="308.75" height="115" as="geometry"/>
                 </mxCell>
                 <mxCell id="93" value="" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=15;" parent="1" vertex="1">
@@ -42,13 +42,13 @@
                         <mxPoint x="760" y="10" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="66" value="MSG 1&#10;(32 bytes)&#10;Public key A" style="shape=parallelogram;perimeter=parallelogramPerimeter;fixedSize=1;fontSize=16;fillColor=#1ba1e2;fontColor=#ffffff;strokeColor=#006EAF;" parent="1" vertex="1">
+                <mxCell id="66" value="MSG 1&#10;(32 bytes)&#10;Public key A&#10;(Temporary)" style="shape=parallelogram;perimeter=parallelogramPerimeter;fixedSize=1;fontSize=16;fillColor=#1ba1e2;fontColor=#ffffff;strokeColor=#006EAF;" parent="1" vertex="1">
                     <mxGeometry x="670" y="280" width="180" height="90" as="geometry"/>
                 </mxCell>
                 <mxCell id="85" value="" style="edgeStyle=none;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=3;fontSize=16;" parent="1" source="69" target="84" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="69" value="MSG 2&#10;(96 bytes)&#10;Public key B&#10;+&#10;Encrypted signature" style="shape=parallelogram;perimeter=parallelogramPerimeter;fixedSize=1;fontSize=16;fillColor=#1ba1e2;fontColor=#ffffff;strokeColor=#006EAF;" parent="1" vertex="1">
+                <mxCell id="69" value="MSG 2&#10;(96 bytes)&#10;Public key B&#10;(Temporary)&#10;+&#10;Encrypted signature" style="shape=parallelogram;perimeter=parallelogramPerimeter;fixedSize=1;fontSize=16;fillColor=#1ba1e2;fontColor=#ffffff;strokeColor=#006EAF;" parent="1" vertex="1">
                     <mxGeometry x="660" y="420" width="200" height="140" as="geometry"/>
                 </mxCell>
                 <mxCell id="72" value="" style="endArrow=none;dashed=1;fontSize=16;fontColor=#000000;strokeWidth=3;fillColor=#fa6800;strokeColor=#C73500;" parent="1" target="71" edge="1">
@@ -107,25 +107,25 @@
                 <mxCell id="95" value="Non-volatile storage" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=16;" parent="1" vertex="1">
                     <mxGeometry x="1115" y="265" width="170" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="97" value="" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="1">
+                <mxCell id="97" value="" style="shape=cylinder3;boundedLbl=1;backgroundOutline=1;size=15;" parent="1" vertex="1">
                     <mxGeometry x="385.62" y="160" width="308.75" height="115" as="geometry"/>
                 </mxCell>
-                <mxCell id="98" value="Private key&#10;A&#10;(Temporary)" style="shape=note;backgroundOutline=1;darkOpacity=0.05;fillColor=#fa6800;fontColor=#FFFFFF;strokeColor=#C73500;fontSize=16;" vertex="1" parent="1">
+                <mxCell id="98" value="Private key&#10;A&#10;(Temporary)" style="shape=note;backgroundOutline=1;darkOpacity=0.05;fillColor=#fa6800;fontColor=#FFFFFF;strokeColor=#C73500;fontSize=16;" parent="1" vertex="1">
                     <mxGeometry x="400" y="200" width="130" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="99" value="Public key&#10;A&#10;(Temporary)" style="shape=note;backgroundOutline=1;darkOpacity=0.05;fillColor=#60a917;fontColor=#ffffff;strokeColor=#2D7600;fontSize=16;" vertex="1" parent="1">
+                <mxCell id="99" value="Public key&#10;A&#10;(Temporary)" style="shape=note;backgroundOutline=1;darkOpacity=0.05;fillColor=#60a917;fontColor=#ffffff;strokeColor=#2D7600;fontSize=16;" parent="1" vertex="1">
                     <mxGeometry x="550" y="200" width="130" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="101" value="Memory" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=16;" vertex="1" parent="1">
+                <mxCell id="101" value="Memory" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=16;" parent="1" vertex="1">
                     <mxGeometry x="455.01" y="160" width="170" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="103" value="Private key&#10;B&#10;(Temporary)" style="shape=note;backgroundOutline=1;darkOpacity=0.05;fillColor=#fa6800;fontColor=#FFFFFF;strokeColor=#C73500;fontSize=16;" vertex="1" parent="1">
+                <mxCell id="103" value="Private key&#10;B&#10;(Temporary)" style="shape=note;backgroundOutline=1;darkOpacity=0.05;fillColor=#fa6800;fontColor=#FFFFFF;strokeColor=#C73500;fontSize=16;" parent="1" vertex="1">
                     <mxGeometry x="839.99" y="200" width="130" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="104" value="Public key&#10;B&#10;(Temporary)" style="shape=note;backgroundOutline=1;darkOpacity=0.05;fillColor=#60a917;fontColor=#ffffff;strokeColor=#2D7600;fontSize=16;" vertex="1" parent="1">
+                <mxCell id="104" value="Public key&#10;B&#10;(Temporary)" style="shape=note;backgroundOutline=1;darkOpacity=0.05;fillColor=#60a917;fontColor=#ffffff;strokeColor=#2D7600;fontSize=16;" parent="1" vertex="1">
                     <mxGeometry x="989.99" y="200" width="130" height="60" as="geometry"/>
                 </mxCell>
-                <mxCell id="105" value="Memory" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=16;" vertex="1" parent="1">
+                <mxCell id="105" value="Memory" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=16;" parent="1" vertex="1">
                     <mxGeometry x="895" y="160" width="170" height="30" as="geometry"/>
                 </mxCell>
             </root>
