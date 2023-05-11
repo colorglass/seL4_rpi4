@@ -96,9 +96,11 @@ static inline void handle_char(uint8_t c) {
 
   result = my_mavlink_parse_char(c, &msg, &status);
   if (result) {
-    // LOG_ERROR(
-    //     "Message: [SEQ]: %03d, [MSGID]: %03d, [SYSID]: %03d, [COMPID]: %03d",
-    //     msg.seq, msg.msgid, msg.sysid, msg.compid);
+    if (result != MAVLINK_FRAMING_OK) {
+      LOG_ERROR(
+          "Message: [SEQ]: %03d, [MSGID]: %03d, [SYSID]: %03d, [COMPID]: %03d",
+          msg.seq, msg.msgid, msg.sysid, msg.compid);
+    }
 
     encrypt_to_frame(&msg);
   }

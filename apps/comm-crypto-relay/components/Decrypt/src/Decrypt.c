@@ -18,8 +18,6 @@ static ps_chardevice_t *serial = NULL;
 static mavlink_message_t mavlink_message_rx_buffer;
 static mavlink_status_t mavlink_status;
 
-static queue_t queue;
-
 static uint32_t head = 0;
 
 static uint8_t key_material[] = {
@@ -50,7 +48,7 @@ static void parse_char_into_msg(uint8_t c) {
   mavlink_message_t msg;
   mavlink_status_t status;
   int result;
-  uint8_t buf[GEC_CT_LEN];
+  uint8_t buf[MAVLINK_MAX_FRAME_LEN];
   uint16_t len;
 
   result = my_mavlink_parse_char(c, &msg, &status);
@@ -80,8 +78,6 @@ void pre_init() {
 
   // gec_key_material_to_2_channels(&symkey_chan1, &symkey_chan2, key_material);
   gec_init_sym_key_conf_auth(&symkey_chan1, key_material);
-
-  queue_init(&queue);
 
   // LOG_ERROR("Out pre_init");
 }
