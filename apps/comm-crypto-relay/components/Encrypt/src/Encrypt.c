@@ -31,12 +31,11 @@ static struct gec_sym_key symkey_chan2;
 
 static queue_t queue;
 
-
 static uint8_t my_mavlink_parse_char(uint8_t c, mavlink_message_t *r_message,
                                      mavlink_status_t *r_mavlink_status) {
   uint8_t msg_received =
-      mavlink_frame_char_buffer(&mavlink_message_rx_buffer, &mavlink_status,
-                                   c, r_message, r_mavlink_status);
+      mavlink_frame_char_buffer(&mavlink_message_rx_buffer, &mavlink_status, c,
+                                r_message, r_mavlink_status);
   if (msg_received == MAVLINK_FRAMING_BAD_CRC) {
     LOG_ERROR("MAVLink message parse error: Bad CRC");
   } else if (msg_received == MAVLINK_FRAMING_BAD_SIGNATURE) {
@@ -65,10 +64,14 @@ static int encrypt_to_frame(const mavlink_message_t *msg) {
   // LOG_ERROR("Encrypt total blocks: %d", loop);
   for (uint32_t i = 0; i < loop; i++) {
     for (int j = 0; j < GEC_PT_LEN; j++) {
-      uint8_t c;
-      dequeue(&queue, &c);
-      buf[j] = c;
+      // uint8_t c;
+      // dequeue(&queue, &c);
+      // buf[j] = c;
+      buf[j] = queue.raw_queue[queue.head++];
+      queue.head %= MAX_QUEUE_SIZE;
     }
+    queue.size -= GEC_PT_LEN;
+
     if (gec_encrypt(&symkey_chan2, buf, ct_frame.ciphertext) != GEC_SUCCESS) {
       LOG_ERROR("Failed to encrypt block %d", i);
     } else {
@@ -93,16 +96,16 @@ static inline void handle_char(uint8_t c) {
 
   result = my_mavlink_parse_char(c, &msg, &status);
   if (result) {
-    LOG_ERROR(
-        "Message: [SEQ]: %03d, [MSGID]: 0x%03d, [SYSID]: %03d, [COMPID]: %03d",
-        msg.seq, msg.msgid, msg.sysid, msg.compid);
+    // LOG_ERROR(
+    //     "Message: [SEQ]: %03d, [MSGID]: %03d, [SYSID]: %03d, [COMPID]: %03d",
+    //     msg.seq, msg.msgid, msg.sysid, msg.compid);
 
     encrypt_to_frame(&msg);
   }
 }
 
 void pre_init() {
-  LOG_ERROR("In pre_init");
+  // LOG_ERROR("In pre_init");
 
   int error;
   error = camkes_io_ops(&io_ops);
@@ -117,11 +120,11 @@ void pre_init() {
 
   queue_init(&queue);
 
-  LOG_ERROR("Out pre_init");
+  // LOG_ERROR("Out pre_init");
 }
 
 int run(void) {
-  LOG_ERROR("In run");
+  // LOG_ERROR("In run");
 
   ring_buffer_t *ringbuffer = (ring_buffer_t *)ring_buffer;
   uint32_t head, tail;
@@ -138,6 +141,6 @@ int run(void) {
     }
   }
 
-  LOG_ERROR("Out run");
+  // LOG_ERROR("Out run");
   return 0;
 }

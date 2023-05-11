@@ -10,7 +10,7 @@ static ps_chardevice_t serial_device;
 static ps_chardevice_t *serial = NULL;
 
 void pre_init() {
-  LOG_ERROR("In pre_init");
+  // LOG_ERROR("In pre_init");
   int error;
   ring_buffer_t *rb;
 
@@ -28,11 +28,11 @@ void pre_init() {
   rb->tail = 0;
   ring_buffer_release();
 
-  LOG_ERROR("Out pre_init");
+  // LOG_ERROR("Out pre_init");
 }
 
 int run(void) {
-  LOG_ERROR("In run");
+  // LOG_ERROR("In run");
 
   int c;
   uint32_t tail;
@@ -54,6 +54,6 @@ int run(void) {
     ring_buffer_release();
   }
 
-  LOG_ERROR("Out run");
+  // LOG_ERROR("Out run");
   return 0;
 }

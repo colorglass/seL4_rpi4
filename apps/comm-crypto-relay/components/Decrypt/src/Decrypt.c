@@ -5,6 +5,7 @@
 #include <utils/util.h>
 
 #include "gec.h"
+#include "mavlink/v2.0/ardupilotmega/mavlink.h"
 #include "mavlink/v2.0/common/mavlink.h"
 #include "mavlink/v2.0/mavlink_helpers.h"
 #include "mavlink/v2.0/mavlink_types.h"
@@ -66,7 +67,7 @@ static void parse_char_into_msg(uint8_t c) {
 }
 
 void pre_init() {
-  LOG_ERROR("In pre_init");
+  // LOG_ERROR("In pre_init");
 
   int error;
   error = camkes_io_ops(&io_ops);
@@ -82,7 +83,7 @@ void pre_init() {
 
   queue_init(&queue);
 
-  LOG_ERROR("Out pre_init");
+  // LOG_ERROR("Out pre_init");
 }
 
 static int decrypt_to_msg(const CipherTextFrame_t *ct_frame,
@@ -178,7 +179,7 @@ static inline void read_ciphertext_frame(CipherTextFrame_t *ct_frame) {
 }
 
 int run(void) {
-  LOG_ERROR("In run");
+  // LOG_ERROR("In run");
 
   CipherTextFrame_t ct_frame;
   uint8_t pt[GEC_PT_LEN];
@@ -204,17 +205,21 @@ int run(void) {
     if (gec_decrypt(&symkey_chan1, ct_frame.ciphertext, pt)) {
       LOG_ERROR("Decrypt failed");
     } else {
-      for (int i = 0; i < GEC_PT_LEN; i++) {
-        enqueue(&queue, pt[i]);
-      }
+      // for (int i = 0; i < GEC_PT_LEN; i++) {
+      //   enqueue(&queue, pt[i]);
+      // }
     }
 
-    for (int i = 0; i < queue.size; i++) {
-      dequeue(&queue, &c);
+    for (int i = 0; i < sizeof(pt); i++) {
+      // dequeue(&queue, &c);
+      c = pt[i];
       result = my_mavlink_parse_char(c, &msg, &status);
       if (result) {
-        LOG_ERROR("Message: [SEQ]: %d, [MSGID]: %d, [SYSID]: %d, [COMPID]: %d",
-                  msg.seq, msg.msgid, msg.sysid, msg.compid);
+        if (result != MAVLINK_FRAMING_OK) {
+          LOG_ERROR(
+              "Message: [SEQ]: %d, [MSGID]: %d, [SYSID]: %d, [COMPID]: %d",
+              msg.seq, msg.msgid, msg.sysid, msg.compid);
+        }
         len = mavlink_msg_to_send_buffer(buf, &msg);
         if (ps_cdev_write(serial, buf, len, NULL, NULL) != len) {
           LOG_ERROR("Write not completed");
@@ -223,6 +228,6 @@ int run(void) {
     }
   }
 
-  LOG_ERROR("Out run");
+  // LOG_ERROR("Out run");
   return 0;
 }

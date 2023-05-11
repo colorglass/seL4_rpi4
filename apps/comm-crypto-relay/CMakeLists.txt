@@ -87,7 +87,8 @@ set(KernelMaxNumNodes 4 CACHE STRING "" FORCE)
 # Serial output relies on Debug settings
 ApplyCommonReleaseVerificationSettings(FALSE FALSE)
 
-set(LibUtilsDefaultZfLogLevel 6)
+# 6: Fatal error. 5: Error and above.
+# set(LibUtilsDefaultZfLogLevel 6)
 
 project(comm C)
 
