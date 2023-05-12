@@ -82,7 +82,7 @@ static int is_initrd(void *file)
     return hdr->magic != INITRD_GZ_MAGIC;
 }
 
-enum img_type image_get_type(void *file)
+static enum img_type image_get_type(void *file)
 {
     if (elf_check_magic(file) == 0) {
         return IMG_ELF;
@@ -99,22 +99,16 @@ enum img_type image_get_type(void *file)
     }
 }
 
-uintptr_t zImage_get_load_address(void *file, uintptr_t ram_base)
+static uintptr_t zImage_get_load_address(void *file, uintptr_t ram_base)
 {
     struct zimage_hdr *hdr;
     hdr = (struct zimage_hdr *)file;
-    if (hdr->start == 0) {
-        return ram_base + 0x8000;
-    } else {
-        return hdr->start;
-    }
-    return 0;
+    return (hdr->start != 0) ? hdr->start : (ram_base + 0x8000);
 }
 
 static int get_guest_image_type(const char *image_name, enum img_type *image_type, Elf64_Ehdr *header)
 {
     int fd;
-    uintptr_t load_addr;
     fd = open(image_name, 0);
     if (fd == -1) {
         ZF_LOGE("Error: Unable to open image \'%s\'", image_name);
@@ -143,7 +137,7 @@ static int guest_write_address(vm_t *vm, uintptr_t paddr, void *vaddr, size_t si
         return -1;
     }
 
-    if (config_set(CONFIG_PLAT_TX1) || config_set(CONFIG_PLAT_TX2)) {
+    if (vm->mem.clean_cache) {
         seL4_CPtr cap = vspace_get_cap(&vm->mem.vmm_vspace, vaddr);
         if (cap == seL4_CapNull) {
             /* Not sure how we would get here, something has gone pretty wrong */
@@ -188,8 +182,8 @@ static int load_image(vm_t *vm, const char *image_name, uintptr_t load_addr,  si
     return 0;
 }
 
-static void *load_guest_kernel_image(vm_t *vm, const char *kernel_image_name, uintptr_t load_base_addr,
-                                     size_t *image_size)
+static uintptr_t load_guest_kernel_image(vm_t *vm, const char *kernel_image_name, uintptr_t load_base_addr,
+                                         size_t *image_size)
 {
     int err;
     uintptr_t load_addr;
@@ -197,34 +191,28 @@ static void *load_guest_kernel_image(vm_t *vm, const char *kernel_image_name, ui
     Elf64_Ehdr header = {0};
     err = get_guest_image_type(kernel_image_name, &ret_file_type, &header);
     if (err) {
-        return NULL;
+        return 0;
     }
     /* Determine the load address */
     switch (ret_file_type) {
     case IMG_BIN:
-        if (config_set(CONFIG_PLAT_TX1) || config_set(CONFIG_PLAT_TX2) || config_set(CONFIG_PLAT_QEMU_ARM_VIRT)
-            || config_set(CONFIG_PLAT_ODROIDC2) || config_set(CONFIG_PLAT_ZYNQMP)) {
-            /* This is likely an aarch64/aarch32 linux difference */
-            load_addr = load_base_addr + 0x80000;
-        } else {
-            load_addr = load_base_addr + 0x8000;
-        }
+        load_addr = vm->entry;
         break;
     case IMG_ZIMAGE:
         load_addr = zImage_get_load_address(&header, load_base_addr);
         break;
     default:
         ZF_LOGE("Error: Unknown Linux image format for \'%s\'", kernel_image_name);
-        return NULL;
+        return 0;
     }
     err = load_image(vm, kernel_image_name, load_addr, image_size);
     if (err) {
-        return NULL;
+        return 0;
     }
-    return (void *)load_addr;
+    return load_addr;
 }
 
-static void *load_guest_module_image(vm_t *vm, const char *image_name, uintptr_t load_base_addr, size_t *image_size)
+static uintptr_t load_guest_module_image(vm_t *vm, const char *image_name, uintptr_t load_base_addr, size_t *image_size)
 {
     int err;
     uintptr_t load_addr;
@@ -232,7 +220,7 @@ static void *load_guest_module_image(vm_t *vm, const char *image_name, uintptr_t
     Elf64_Ehdr header = {0};
     err = get_guest_image_type(image_name, &ret_file_type, &header);
     if (err) {
-        return NULL;
+        return 0;
     }
     /* Determine the load address */
     switch (ret_file_type) {
@@ -242,29 +230,29 @@ static void *load_guest_module_image(vm_t *vm, const char *image_name, uintptr_t
         break;
     default:
         ZF_LOGE("Error: Unknown Linux image format for \'%s\'", image_name);
-        return NULL;
+        return 0;
     }
     err = load_image(vm, image_name, load_addr, image_size);
     if (err) {
-        return NULL;
+        return 0;
     }
-    return (void *)load_addr;
+    return load_addr;
 }
 
 int vm_load_guest_kernel(vm_t *vm, const char *kernel_name, uintptr_t load_address, size_t alignment,
                          guest_kernel_image_t *guest_kernel_image)
 {
-    void *load_addr;
+    uintptr_t load_addr;
     size_t kernel_len;
     if (!guest_kernel_image) {
         ZF_LOGE("Invalid guest_image_t object");
         return -1;
     }
     load_addr = load_guest_kernel_image(vm, kernel_name, load_address, &kernel_len);
-    if (!load_addr) {
+    if (0 == load_addr) {
         return -1;
     }
-    guest_kernel_image->kernel_image.load_paddr = (uintptr_t)load_addr;
+    guest_kernel_image->kernel_image.load_paddr = load_addr;
     guest_kernel_image->kernel_image.size = kernel_len;
     return 0;
 }
@@ -272,7 +260,7 @@ int vm_load_guest_kernel(vm_t *vm, const char *kernel_name, uintptr_t load_addre
 int vm_load_guest_module(vm_t *vm, const char *module_name, uintptr_t load_address, size_t alignment,
                          guest_image_t *guest_image)
 {
-    void *load_addr;
+    uintptr_t load_addr;
     size_t module_len;
 
     if (!guest_image) {
@@ -281,11 +269,11 @@ int vm_load_guest_module(vm_t *vm, const char *module_name, uintptr_t load_addre
     }
 
     load_addr = load_guest_module_image(vm, module_name, load_address, &module_len);
-    if (!load_addr) {
+    if (0 == load_addr) {
         return -1;
     }
 
-    guest_image->load_paddr = (uintptr_t)load_addr;
+    guest_image->load_paddr = load_addr;
     guest_image->size = module_len;
     return 0;
 }

@@ -38,20 +38,9 @@ plat="rpi4"
 cmake "$APP_DIR" \
     -GNinja \
     -DSEL4_CACHE_DIR="$TOP_DIR/.sel4_cache" \
-    -DKernelArchARM=1 \
-    -DKernelSel4ArchAarch64=1 \
-    -DKernelWordSize=64 \
-    -DKernelArmCortexA72=1 \
-    -DKernelArchArmV8a=1 \
-    -Darch=aarch64 \
-    -DCMAKE_TOOLCHAIN_FILE="$TOP_DIR/kernel/gcc.cmake" \
-    -DPLATFORM=$plat \
-    -DTUT_BOARD=$plat \
-    -DCROSS_COMPILER_PREFIX=aarch64-linux-gnu- \
-    -DSEL4_TUTORIALS_DIR="$TOP_DIR/projects/sel4-tutorials" \
-    # -DKernelMaxNumNodes=4 \
-    # -DKernelSel4ArchArmHyp=1 \
-    # -DKernelArmHypervisorSupport=1
+    -DPLATFORM=rpi4 \
+    -DVM_LINUX=1 \
+    -DVM_LINUX_APP=normal \
 
 echo "Configuration complete"
 
