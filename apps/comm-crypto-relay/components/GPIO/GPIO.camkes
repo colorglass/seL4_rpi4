@@ -1,4 +1,6 @@
-component GPIOHW {
-    hardware;
-    dataport Buf(4096) mem;
-}
+import <SerialServer/SerialServer.camkes>;
+
+//component GPIOHW {
+//    hardware;
+//    dataport Buf(4096) mem;
+//}
