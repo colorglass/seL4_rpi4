@@ -64,9 +64,6 @@ static int encrypt_to_frame(const mavlink_message_t *msg) {
   // LOG_ERROR("Encrypt total blocks: %d", loop);
   for (uint32_t i = 0; i < loop; i++) {
     for (int j = 0; j < GEC_PT_LEN; j++) {
-      // uint8_t c;
-      // dequeue(&queue, &c);
-      // buf[j] = c;
       buf[j] = queue.raw_queue[queue.head++];
       queue.head %= MAX_QUEUE_SIZE;
     }

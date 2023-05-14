@@ -82,8 +82,16 @@ void pre_init() {
   // LOG_ERROR("Out pre_init");
 }
 
-static int decrypt_to_msg(const CipherTextFrame_t *ct_frame,
-                          mavlink_message_t *ret_msg) {
+// Process ciphertext.
+// First decrypt, then parse byte by byte.
+static inline int decrypt_to_msg(const CipherTextFrame_t *ct_frame) {
+  uint8_t pt[GEC_PT_LEN];
+  uint8_t buf[MAVLINK_MAX_FRAME_LEN];
+  mavlink_message_t msg;
+  mavlink_status_t status;
+  int result;
+  uint16_t len;
+
   if (ct_frame->magic != GEC_CIPHERTEXT_FRAME_MAGIC) {
     LOG_ERROR("MAGIC not match: 0x%02X", ct_frame->magic);
     return 1;
@@ -93,24 +101,23 @@ static int decrypt_to_msg(const CipherTextFrame_t *ct_frame,
     return 1;
   }
 
-  uint8_t pt[GEC_PT_LEN];
   if (gec_decrypt(&symkey_chan1, ct_frame->ciphertext, pt)) {
     LOG_ERROR("Decrypt failed");
     return 1;
   }
 
-  mavlink_message_t msg;
-  mavlink_status_t status;
-  int result;
-
   for (int i = 0; i < GEC_PT_LEN; i++) {
     result = my_mavlink_parse_char(pt[i], &msg, &status);
     if (result) {
-      LOG_ERROR(
-          "Message: [SEQ]: %03d, [MSGID]: %03d, [SYSID]: %03d, [COMPID]: %03d",
-          msg.seq, msg.msgid, msg.sysid, msg.compid);
-      *ret_msg = msg;
-      break;
+      if (result != MAVLINK_FRAMING_OK) {
+        LOG_ERROR("Message: [SEQ]: %03d, [MSGID]: %03d, [SYSID]: %03d, "
+                  "[COMPID]: %03d",
+                  msg.seq, msg.msgid, msg.sysid, msg.compid);
+      }
+      len = mavlink_msg_to_send_buffer(buf, &msg);
+      if (ps_cdev_write(serial, buf, len, NULL, NULL) != len) {
+        LOG_ERROR("Write not completed");
+      }
     }
   }
 
@@ -178,50 +185,11 @@ int run(void) {
   // LOG_ERROR("In run");
 
   CipherTextFrame_t ct_frame;
-  uint8_t pt[GEC_PT_LEN];
-  mavlink_message_t msg;
-  mavlink_status_t status;
-  uint8_t buf[GEC_CT_LEN];
-  uint32_t len;
-  int result;
-  uint8_t c;
 
   while (1) {
     read_ciphertext_frame(&ct_frame);
 
-    // if (ct_frame.magic != GEC_CIPHERTEXT_FRAME_MAGIC) {
-    //   LOG_ERROR("MAGIC not match: 0x%02X", ct_frame.magic);
-    //   return 1;
-    // }
-    // if (ct_frame.tag != GEC_CIPHERTEXT_FRAME_TAG) {
-    //   LOG_ERROR("TAG not match: 0x%02X", ct_frame.tag);
-    //   return 1;
-    // }
-
-    if (gec_decrypt(&symkey_chan1, ct_frame.ciphertext, pt)) {
-      LOG_ERROR("Decrypt failed");
-    } else {
-      // for (int i = 0; i < GEC_PT_LEN; i++) {
-      //   enqueue(&queue, pt[i]);
-      // }
-    }
-
-    for (int i = 0; i < sizeof(pt); i++) {
-      // dequeue(&queue, &c);
-      c = pt[i];
-      result = my_mavlink_parse_char(c, &msg, &status);
-      if (result) {
-        if (result != MAVLINK_FRAMING_OK) {
-          LOG_ERROR(
-              "Message: [SEQ]: %d, [MSGID]: %d, [SYSID]: %d, [COMPID]: %d",
-              msg.seq, msg.msgid, msg.sysid, msg.compid);
-        }
-        len = mavlink_msg_to_send_buffer(buf, &msg);
-        if (ps_cdev_write(serial, buf, len, NULL, NULL) != len) {
-          LOG_ERROR("Write not completed");
-        }
-      }
-    }
+    decrypt_to_msg(&ct_frame);
   }
 
   // LOG_ERROR("Out run");

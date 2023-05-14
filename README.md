@@ -3,11 +3,11 @@
 ## Up-to-date examples
 (From newer to older):
 
-1. `key-exchange`: Based on `comm-crypto-rpc-relay`, but first establishes two pairs of keys with GCS for each session.
+1. `comm-crypto-relay`: Integrate driver output inside Encrypt/Decrypt; **Integrate Linux VM**.
 
-2. `comm-crypto-rpc-relay`: Based on `comm-crypto-relay`, but use RPC calls for driver output.
+2. `key-exchange`: Based on `comm-crypto-rpc-relay`, but first establishes two pairs of keys with GCS for each session.
 
-3. `comm-crypto-relay`: Integrate driver output inside Encrypt/Decrypt.
+3. `comm-crypto-rpc-relay`: Based on `comm-crypto-relay`, but use RPC calls for driver output.
 
 
 ## How to ... ?
