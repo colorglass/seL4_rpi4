@@ -32,8 +32,8 @@ cmake $KERNEL_DIR \
     -Darch=aarch64 \
     -DKernelSel4Arch=aarch64 \
     -DCMAKE_TOOLCHAIN_FILE="$KERNEL_DIR/gcc.cmake" \
-    -DKernelPlatform=ls1046a \
+    -DKernelPlatform=bcm2711 \
     -DCROSS_COMPILER_PREFIX=aarch64-linux-gnu- \
-    # -DKernelSel4ArchArmHyp=1 # Temporarily disable hypervisor support
+    -DKernelSel4ArchArmHyp=1 # Temporarily disable hypervisor support
 
 ninja
