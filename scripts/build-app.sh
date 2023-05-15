@@ -39,8 +39,8 @@ cmake "$APP_DIR" \
     -GNinja \
     -DSEL4_CACHE_DIR="$TOP_DIR/.sel4_cache" \
     -DPLATFORM=rpi4 \
-    # -DVM_LINUX=1 \
-    # -DVM_LINUX_APP=normal \
+    -DVM_LINUX=1 \
+    -DVM_LINUX_APP=normal \
 
 echo "Configuration complete"
 
@@ -61,7 +61,7 @@ fi
 
 echo "##########################"
 
-DEST_DIR="/mnt/hgfs/shared"
+DEST_DIR="/mnt/d/Resource/tftp"
 
 echo "Copy to shared folder: $DEST_DIR"
 

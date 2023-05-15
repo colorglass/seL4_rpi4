@@ -44,13 +44,15 @@ assembly {
 
         vm0.vm_image_config = {
             "map_one_to_one" : true,
+            "provide_initrd" : false,
         };
 
         vm0.num_vcpus = 1;
 
         vm0.dtb = dtb([
                         {"path": "/soc/cprman@7e101000"},
-                        {"path": "/soc/serial@7e201000"},
+                        {"path": "/soc/aux@7e215000"},
+                        {"path": "/soc/serial@7e215040"},
                         {"path": "/soc/dma@7e007000"},
                         {"path": "/soc/sdhci@7e300000"},
                         {"path": "/soc/mailbox@7e00b880"},

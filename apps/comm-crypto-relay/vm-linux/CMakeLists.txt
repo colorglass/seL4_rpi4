@@ -12,7 +12,6 @@ if("${PLATFORM}" STREQUAL "rpi4")
     set(cpp_flags "-DKERNELARMPLATFORM_RPI4")
     
     AddToFileServer("linux" "${CMAKE_CURRENT_LIST_DIR}/images/linux")
-    set(rootfs_file "${CMAKE_CURRENT_LIST_DIR}/images/rootfs.cpio.gz")
 
     set(dtb_file "${CMAKE_CURRENT_LIST_DIR}/images/rpi4.dtb")
     set(dts_file "${CMAKE_CURRENT_LIST_DIR}/images/rpi4.dts")
