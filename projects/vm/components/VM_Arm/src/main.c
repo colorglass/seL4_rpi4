@@ -1300,6 +1300,7 @@ extern const int __attribute__((weak)) num_vcpus;
 int run(void)
 {
     /* if the base_prio attribute is set, use it */
+    printf("Hello world\n");
     if (&base_prio != NULL) {
         VM_PRIO = base_prio;
     }

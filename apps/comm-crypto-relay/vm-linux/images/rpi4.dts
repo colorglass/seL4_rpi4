@@ -19,31 +19,17 @@
 	interrupt-parent = <0x01>;
 
 	aliases {
-		serial0 = "/soc/serial@7e201000";
+		serial1 = "/soc/serial@7e215040";
 	};
  
 	chosen {
-		stdout-path = "serial0:115200n8";
-		bootargs = "console=ttyAMA0,115200n8 console=tty0 earlycon=pl011,mmio32,0xfe201000 debug loglevel=8 root=/dev/mmcblk1p2 rootfstype=ext4 fsck.repair=yes rootwait";
+		stdout-path = "serial1:115200n8";
+		bootargs = "console=ttyS0,115200 console=tty1 earlycon=uart8250,mmio32,0xfe215040 8250.nr_uarts=1 debug loglevel=8 root=/dev/mmcblk1p2 rootfstype=ext4 fsck.repair=yes rootwait";
 	};
 
 	memory@40000000 {
 		device_type = "memory";
-		reg = <0x00 0x10000000 0x20000000 0x00 0x40000000 0x20000000>;
-	};
-
-	reserved-memory {
-		#address-cells = <0x02>;
-		#size-cells = <0x01>;
-		ranges;
-
-		linux,cma {
-			compatible = "shared-dma-pool";
-			size = <0x4000000>;
-			reusable;
-			linux,cma-default;
-			alloc-ranges = <0x00 0x00 0x40000000>;
-		};
+		reg = <0x00 0x10000000 0x20000000>;
 	};
 
 	soc {
@@ -59,6 +45,22 @@
 			reg = <0x7e101000 0x2000>;
 			clocks = <0x03 0x04 0x00 0x04 0x01 0x04 0x02 0x05 0x00 0x05 0x01 0x05 0x02>;
 			phandle = <0x06>;
+		};
+
+		aux@7e215000 {
+			compatible = "brcm,bcm2835-aux";
+			#clock-cells = <0x01>;
+			reg = <0x7e215000 0x08>;
+			clocks = <0x06 0x14>;
+			phandle = <0x0c>;
+		};
+
+		serial@7e215040 {
+			compatible = "brcm,bcm2835-aux-uart";
+			reg = <0x7e215040 0x40>;
+			interrupts = <0x00 0x5d 0x04>;
+			clocks = <0x0c 0x00>;
+			status = "okay";
 		};
 
 		dsi@7e209000 {
@@ -89,17 +91,6 @@
 			status = "disabled";
 			power-domains = <0x0b 0x12>;
 			phandle = <0x05>;
-		};
-
-		serial@7e201000 {
-			compatible = "arm,pl011\0arm,primecell";
-			reg = <0x7e201000 0x200>;
-			interrupts = <0x00 0x79 0x04>;
-			clocks = <0x06 0x13 0x06 0x14>;
-			clock-names = "uartclk\0apb_pclk";
-			arm,primecell-periphid = <0x241011>;
-			uart-has-rtscts;
-			status = "okay";
 		};
 
 		dma@7e007000 {
@@ -215,15 +206,15 @@
 			brcm,enable-ssc;
 			phandle = <0x24>;
 
-			pci@0,0 {
+			pci@1,0 {
 				#address-cells = <0x03>;
 				#size-cells = <0x02>;
 				ranges;
 				reg = <0x00 0x00 0x00 0x00 0x00>;
 
-				usb@0,0 {
+				usb@1,0 {
 					reg = <0x10000 0x00 0x00 0x00 0x00>;
-     reset = <0x25>;
+					resets = <0x25 0x00>;
 				};
 			};
 		};
@@ -240,6 +231,7 @@
 			compatible = "brcm,bcm2711-emmc2";
 			reg = <0x00 0x7e340000 0x100>;
 			interrupts = <0x00 0x7e 0x04>;
+			bus-width = <0x04>;
 			clocks = <0x06 0x33>;
 			status = "okay";
 			vqmmc-supply = <0x1e>;

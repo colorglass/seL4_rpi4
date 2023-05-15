@@ -9,10 +9,10 @@
 / {
 	chosen {
 		seL4,elfloader-devices =
-		    "serial0";
+		    "serial1";
 
 		seL4,kernel-devices =
-		    "serial0",
+		    "serial1",
 		    &{/soc/interrupt-controller@40041000},
 		    &{/soc/local_intc@40000000},
 		    &{/timer};
@@ -78,6 +78,11 @@
 		 */
 		reserved-memory@3b400000 {
 			reg = < 0x00000000 0x3b400000 0x04c00000 >;
+			no-map;
+		};
+
+		reserved-memory@10000000 {
+			reg = < 0x00 0x10000000 0x20000000 >;
 			no-map;
 		};
 	};

@@ -26,7 +26,7 @@ assembly {
     configuration {
         pixhawk_rx.affinity = 3;
         telem_rx.affinity   = 2;
-        decrypt.affinity    = 0;
+        decrypt.affinity    = 1;
         encrypt.affinity    = 1;
 
         pixhawk_rx.priority = HIGHEST_PRIORITY;
