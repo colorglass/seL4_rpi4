@@ -109,11 +109,11 @@ static inline int decrypt_to_msg(const CipherTextFrame_t *ct_frame) {
   for (int i = 0; i < GEC_PT_LEN; i++) {
     result = my_mavlink_parse_char(pt[i], &msg, &status);
     if (result) {
-      if (result != MAVLINK_FRAMING_OK) {
+      // if (result != MAVLINK_FRAMING_OK) {
         LOG_ERROR("Message: [SEQ]: %03d, [MSGID]: %03d, [SYSID]: %03d, "
                   "[COMPID]: %03d",
                   msg.seq, msg.msgid, msg.sysid, msg.compid);
-      }
+      // }
       len = mavlink_msg_to_send_buffer(buf, &msg);
       if (ps_cdev_write(serial, buf, len, NULL, NULL) != len) {
         LOG_ERROR("Write not completed");
@@ -138,6 +138,9 @@ static inline uint8_t read_byte() {
   ring_buffer_acquire();
   head %= RING_BUFFER_SIZE;
 
+  ringbuffer->head = head;
+  ring_buffer_release();
+
   return c;
 }
 
@@ -155,6 +158,9 @@ static inline void read_buffer(void *buf, uint32_t len) {
       head %= RING_BUFFER_SIZE;
     }
   }
+
+  ringbuffer->head = head;
+  ring_buffer_release();
 }
 
 static inline void read_ciphertext_frame(CipherTextFrame_t *ct_frame) {

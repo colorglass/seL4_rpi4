@@ -3,6 +3,7 @@
 #include <platsupport/chardev.h>
 #include <stdint.h>
 
+#include "gec.h"
 #include "my_type.h"
 
 static ps_io_ops_t io_ops;
