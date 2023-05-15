@@ -344,8 +344,10 @@ int pl011_uart_getchar(ps_chardevice_t *d)
         ch = (int)(r->dr);
         if (ch & 0xff00) {
             LOG_ERROR("ERROR: %04X", ch & 0xff00);
+            ch = EOF;
+        } else {
+            ch &= MASK(8);
         }
-        ch &= MASK(8);
     }
 
     return ch;
