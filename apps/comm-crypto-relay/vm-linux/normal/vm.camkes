@@ -65,6 +65,7 @@ assembly {
                     "0xff846000:12", // Interrupt Controller Virtual CPU interface (Virtual Machine view)
                     "0x10000000:28", // Linux kernel memory regions
                     "0x20000000:28",
+                    "0x600000000:30",
                     ];
     }
 }
