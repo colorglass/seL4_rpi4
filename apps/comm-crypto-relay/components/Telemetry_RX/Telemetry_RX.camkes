@@ -1,5 +1,5 @@
 import "../GPIO/GPIO.camkes";
-// import <Timer.idl4>;
+import <Timer.idl4>;
 
 component Telemetry_RX {
     include "my_type.h";
@@ -10,8 +10,6 @@ component Telemetry_RX {
     consumes Dummy serial_dev;
 
     dataport ring_buffer_t ring_buffer;
-
-    // uses Timer timer;
 
     composition {
         component GPIOHW gpio_hw;

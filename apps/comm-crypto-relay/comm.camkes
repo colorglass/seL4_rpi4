@@ -5,7 +5,7 @@ import "components/Pixhawk_RX/Pixhawk_RX.camkes";
 import "components/Telemetry_RX/Telemetry_RX.camkes";
 import "components/Decrypt/Decrypt.camkes";
 import "components/Encrypt/Encrypt.camkes";
-// import <TimeServer/TimeServer.camkes>;
+import <TimeServer/TimeServer.camkes>;
 
 #if (VM_LINUX == 1)
 import <vm.camkes>;
@@ -19,16 +19,16 @@ assembly {
         component Telemetry_RX  telem_rx;
         component Decrypt       decrypt;
         component Encrypt       encrypt;
-        // component TimeServer    time_server;
+        component TimeServer    time_server;
 
         connection seL4SharedData   dataport_pixhawk_to_encrypt     (from pixhawk_rx.ring_buffer,   to encrypt.ring_buffer);
         connection seL4SharedData   dataport_telem_to_decrypt       (from telem_rx.ring_buffer,     to decrypt.ring_buffer);
 
-        // connection seL4TimeServer timeerrrr(from telem_rx.timer, to time_server.the_timer);
+        connection seL4TimeServer timeerrrr(from pixhawk_rx.timer, to time_server.the_timer);
     }
 
     configuration {
-        // time_server.timers_per_client = 1;
+        time_server.timers_per_client = 1;
 
         pixhawk_rx.affinity = 3;
         telem_rx.affinity   = 2;

@@ -1,4 +1,5 @@
 import "../GPIO/GPIO.camkes";
+import <Timer.idl4>;
 
 component Pixhawk_RX {
     include "my_type.h";
@@ -10,6 +11,8 @@ component Pixhawk_RX {
 
     dataport ring_buffer_t ring_buffer;
 
+    uses Timer timer;
+
     composition {
         component GPIOHW gpio_hw;
 
@@ -19,6 +22,7 @@ component Pixhawk_RX {
 
     configuration {
         serial_dev.dtb = dtb({ "aliases" : "serial5" });
+        serial_dev.generate_interrupts = 1;
 
         gpio_hw.mem_paddr = 0xfe200000;
         gpio_hw.mem_size = 4096;

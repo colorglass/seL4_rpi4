@@ -61,7 +61,7 @@ fi
 
 echo "##########################"
 
-DEST_DIR="/mnt/d/Resource/tftp"
+DEST_DIR="/mnt/hgfs/shared"
 
 echo "Copy to shared folder: $DEST_DIR"
 

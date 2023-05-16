@@ -214,7 +214,8 @@ static int pl011_uart_configure(ps_chardevice_t *dev)
 
     // Disable RX/all interrupts
     // pl011_uart_disable_rx_irq(dev);
-    r->imsc = 0x7f1;
+    // r->imsc = 0x7f1;
+    r->imsc = 0;
 
     // Wait till UART is not busy anymore
     pl011_uart_wait_busy(dev);
