@@ -1,0 +1,39 @@
+import "../GPIO/GPIO.camkes";
+import <Timer.idl4>;
+
+component RX {
+    include "my_type.h";
+    control;
+
+    dataport Buf(4096) gpiohw_mem;
+
+    emits Dummy dummy_source1;
+    consumes Dummy serial_dev1;
+
+    emits Dummy dummy_source2;
+    consumes Dummy serial_dev2;
+
+    dataport ring_buffer_t ring_buffer_decrypt;
+    dataport ring_buffer_t ring_buffer_encrypt;
+
+    // uses Timer timer;
+
+    composition {
+        component GPIOHW gpio_hw;
+
+        connection seL4DTBHardware serial_conn1(from dummy_source1, to serial_dev1);
+        connection seL4HardwareMMIO gpio_mem1(from gpiohw_mem, to gpio_hw.mem);
+        connection seL4DTBHardware serial_conn2(from dummy_source2, to serial_dev2);
+        connection seL4HardwareMMIO gpio_mem2(from gpiohw_mem, to gpio_hw.mem);
+    }
+
+    configuration {
+        serial_dev1.dtb = dtb({ "aliases" : "serial5" });
+        serial_dev2.dtb = dtb({ "aliases" : "serial3" });
+        // serial_dev.generate_interrupts = 1;
+
+        gpio_hw.mem_paddr = 0xfe200000;
+        gpio_hw.mem_size = 4096;
+    }
+}
+

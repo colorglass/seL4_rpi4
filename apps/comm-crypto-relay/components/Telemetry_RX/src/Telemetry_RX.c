@@ -45,14 +45,14 @@ int run(void) {
   // ring_buffer_t *rb = (ring_buffer_t *)ring_buffer;
 
   while (1) {
-    // while ((c = ps_cdev_getchar(serial)) == EOF) {
-    // }
+    while ((c = ps_cdev_getchar(serial)) == EOF) {
+    }
 
-    // rb->buffer[tail] = c;
-    // ring_buffer_release();
-    // tail = (tail + 1) % RING_BUFFER_SIZE;
-    // rb->tail = tail;
-    // ring_buffer_release();
+    rb->buffer[tail] = c;
+    ring_buffer_release();
+    tail = (tail + 1) % RING_BUFFER_SIZE;
+    rb->tail = tail;
+    ring_buffer_release();
   }
 
   // LOG_ERROR("Out run");

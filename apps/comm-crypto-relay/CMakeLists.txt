@@ -53,6 +53,12 @@ DeclareCAmkESComponent(
     LIBS GEC
 )
 
+DeclareCAmkESComponent(
+    RX
+    INCLUDES include ${gec_include_path}
+    SOURCES components/RX/src/RX.c
+)
+
 if(${VM_LINUX})
     AddCamkesCPPFlag(cpp_flags CONFIG_VARS VmEmmc2NoDMA VmVUSB VM_LINUX)
 

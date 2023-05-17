@@ -215,7 +215,7 @@ static int pl011_uart_configure(ps_chardevice_t *dev)
     // Disable RX/all interrupts
     // pl011_uart_disable_rx_irq(dev);
     // r->imsc = 0x7f1;
-    r->imsc = 0;
+    r->icr = 0x7ff;
 
     // Wait till UART is not busy anymore
     pl011_uart_wait_busy(dev);
@@ -260,8 +260,7 @@ static int pl011_uart_configure(ps_chardevice_t *dev)
     pl011_uart_enable(dev);
 
     // Enable RX interrupt
-    // pl011_uart_enable_rx_irq(dev);
-    r->imsc |= 0x50;
+    pl011_uart_enable_rx_irq(dev);
 
     return 0;
 }
@@ -345,7 +344,8 @@ int pl011_uart_getchar(ps_chardevice_t *d)
         ch = (int)(r->dr);
         if (ch & 0xff00) {
             LOG_ERROR("ERROR: %04X", ch & 0xff00);
-            ch = EOF;
+            // ch = EOF;
+            ch &= MASK(8);
         } else {
             ch &= MASK(8);
         }
