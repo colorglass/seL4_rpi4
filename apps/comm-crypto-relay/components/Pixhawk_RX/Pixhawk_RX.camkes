@@ -5,13 +5,13 @@ component Pixhawk_RX {
     include "my_type.h";
     control;
 
-    dataport Buf(4096) gpiohw_mem;
-    emits Dummy dummy_source;
-    consumes Dummy serial_dev;
-
     dataport ring_buffer_t ring_buffer;
 
     uses Timer timer;
+
+    dataport Buf(4096) gpiohw_mem;
+    emits Dummy dummy_source;
+    consumes Dummy serial_dev;
 
     composition {
         component GPIOHW gpio_hw;

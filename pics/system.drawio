@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="E4ksEo9JBggvoTbmlbK2" name="Page-1">
-        <mxGraphModel dx="1276" dy="851" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="1103" dy="779" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -193,7 +193,7 @@
                         <mxPoint x="920" y="40" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="189" value="Channel 2" style="edgeLabel;resizable=0;align=center;verticalAlign=middle;" parent="188" connectable="0" vertex="1">
+                <mxCell id="189" value="Channel 2" style="edgeLabel;resizable=0;align=center;verticalAlign=middle;fontSize=16;" parent="188" connectable="0" vertex="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="190" value="" style="endArrow=classic;strokeWidth=3;" parent="1" edge="1">
@@ -202,11 +202,11 @@
                         <mxPoint x="770" y="120" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="191" value="Channel 1" style="edgeLabel;resizable=0;align=center;verticalAlign=middle;" parent="190" connectable="0" vertex="1">
+                <mxCell id="191" value="Channel 1" style="edgeLabel;resizable=0;align=center;verticalAlign=middle;fontSize=16;" parent="190" connectable="0" vertex="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="192" value="" style="verticalLabelPosition=bottom;sketch=0;html=1;fillColor=#282828;strokeColor=none;verticalAlign=top;pointerEvents=1;align=center;shape=mxgraph.cisco_safe.security_icons.icon22;" parent="1" vertex="1">
-                    <mxGeometry x="1036.5" y="580" width="73.5" height="80" as="geometry"/>
+                <mxCell id="194" value="" style="verticalLabelPosition=bottom;sketch=0;html=1;fillColor=#F06650;strokeColor=#ffffff;verticalAlign=top;align=center;points=[];pointerEvents=1;shape=mxgraph.cisco_safe.compositeIcon;bgIcon=threat5;resIcon=mxgraph.cisco_safe.threat.threat_e3;" parent="1" vertex="1">
+                    <mxGeometry x="1040" y="630" width="80" height="80" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
