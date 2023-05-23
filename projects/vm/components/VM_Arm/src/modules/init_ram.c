@@ -18,9 +18,6 @@ void WEAK init_ram_module(vm_t *vm, void *cookie)
                                  vm_config.ram.base,
                                  vm_config.ram.size,
                                  vm->mem.map_one_to_one);
-#ifdef CONFIG_PLAT_BCM2711
-    vm_ram_register_at(vm, 0x40000000, 0x20000000, true);
-#endif
     assert(!err);
 }
 
