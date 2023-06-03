@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="IfaHLEzc9hbXiV-kEbx_" name="Page-1">
-        <mxGraphModel dx="1276" dy="851" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+        <mxGraphModel dx="1063" dy="709" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -165,6 +165,28 @@
                 </mxCell>
                 <mxCell id="74" value="RX" style="edgeLabel;resizable=0;align=right;verticalAlign=bottom;fontSize=16;" parent="71" connectable="0" vertex="1">
                     <mxGeometry x="1" relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="75" value="" style="endArrow=classic;html=1;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;strokeWidth=3;fillColor=#1ba1e2;strokeColor=#006EAF;" edge="1" parent="1" source="5" target="27">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="810" y="280" as="sourcePoint"/>
+                        <mxPoint x="920" y="280" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="76" value="Ringbuffer" style="edgeLabel;resizable=0;align=center;verticalAlign=middle;labelBackgroundColor=none;fontSize=16;" connectable="0" vertex="1" parent="75">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint y="-20" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="77" value="" style="endArrow=classic;html=1;exitX=0;exitY=0;exitDx=0;exitDy=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;strokeWidth=3;fillColor=#1ba1e2;strokeColor=#006EAF;" edge="1" parent="1" source="22" target="27">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="820" y="290" as="sourcePoint"/>
+                        <mxPoint x="930" y="290" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="78" value="Ringbuffer" style="edgeLabel;resizable=0;align=center;verticalAlign=middle;labelBackgroundColor=none;fontSize=16;" connectable="0" vertex="1" parent="77">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-14" y="10" as="offset"/>
+                    </mxGeometry>
                 </mxCell>
             </root>
         </mxGraphModel>
