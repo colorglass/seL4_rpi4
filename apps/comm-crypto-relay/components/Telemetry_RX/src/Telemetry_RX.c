@@ -14,6 +14,7 @@ static ps_chardevice_t *serial = NULL;
 ring_buffer_t *rb;
 static uint32_t tail = 0;
 
+
 void pre_init() {
   // ZF_LOGE("In pre_init");
 

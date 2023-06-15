@@ -1,4 +1,5 @@
 import "../GPIO/GPIO.camkes";
+import <Timer.idl4>;
 
 component Telemetry_RX {
     include "my_type.h";
