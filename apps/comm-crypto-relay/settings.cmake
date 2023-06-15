@@ -1,4 +1,4 @@
-# set(LibUtilsDefaultZfLogLevel 0)
+set(LibUtilsDefaultZfLogLevel 5)
 
 set(support_plat "rpi4;")
 

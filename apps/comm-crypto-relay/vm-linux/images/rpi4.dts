@@ -19,15 +19,16 @@
 	interrupt-parent = <0x01>;
 
 	aliases {
+		serial0 = "/soc/serial@7e201000";
 		serial1 = "/soc/serial@7e215040";
 	};
  
 	chosen {
-		stdout-path = "serial1:115200n8";
-		bootargs = "console=ttyS0,115200 console=tty1 earlycon=uart8250,mmio32,0xfe215040 8250.nr_uarts=1 debug loglevel=8 root=/dev/mmcblk1p2 rootfstype=ext4 fsck.repair=yes rootwait";
+		stdout-path = "serial0:115200n8";
+		bootargs = "console=ttyAMA0,115200 earlycon=pl011,mmio32,0xfe201000 debug loglevel=8 root=/dev/mmcblk1p2 rootfstype=ext4 fsck.repair=yes rootwait";
 	};
 
-	memory@40000000 {
+	memory@10000000 {
 		device_type = "memory";
 		reg = <0x00 0x10000000 0x20000000>;
 	};
@@ -45,6 +46,25 @@
 			reg = <0x7e101000 0x2000>;
 			clocks = <0x03 0x04 0x00 0x04 0x01 0x04 0x02 0x05 0x00 0x05 0x01 0x05 0x02>;
 			phandle = <0x06>;
+		};
+
+		serial@7e201000 {
+			compatible = "arm,pl011\0arm,primecell";
+			reg = <0x7e201000 0x200>;
+			interrupts = <0x00 0x79 0x04>;
+			clocks = <0x06 0x13 0x06 0x14>;
+			clock-names = "uartclk\0apb_pclk";
+			arm,primecell-periphid = <0x241011>;
+			pinctrl-names = "default";
+			pinctrl-0 = <0x07 0x08>;
+			uart-has-rtscts;
+			status = "okay";
+
+			// bluetooth {
+			// 	compatible = "brcm,bcm43438-bt";
+			// 	max-speed = <0x1e8480>;
+			// 	shutdown-gpios = <0x09 0x00 0x00>;
+			// };
 		};
 
 		aux@7e215000 {

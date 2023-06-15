@@ -12,6 +12,7 @@ if("${PLATFORM}" STREQUAL "rpi4")
     set(cpp_flags "-DKERNELARMPLATFORM_RPI4")
     
     AddToFileServer("linux" "${CMAKE_CURRENT_LIST_DIR}/images/linux")
+    AddToFileServer("matrix653" "${CMAKE_CURRENT_LIST_DIR}/images/bspbcm2711.bin")
 
     set(dtb_file "${CMAKE_CURRENT_LIST_DIR}/images/rpi4.dtb")
     set(dts_file "${CMAKE_CURRENT_LIST_DIR}/images/rpi4.dts")
