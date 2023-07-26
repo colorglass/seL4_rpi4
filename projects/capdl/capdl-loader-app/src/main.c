@@ -507,6 +507,7 @@ static int find_device_object(seL4_Word paddr, seL4_Word type, int size_bits, se
     /* See if an overlapping object was already created, can only do this for frames.
      * Any overlapping object will be the previous one, since objects are created in
      * order of physical address */
+    ZF_LOGI("type is : %d, obj_id is: %d\n", type, obj_id);
     if (type != seL4_UntypedObject && obj_id > 0) {
         CDL_ObjID prev = obj_id - 1;
         CDL_Object *obj = &spec->objects[prev];
@@ -517,6 +518,7 @@ static int find_device_object(seL4_Word paddr, seL4_Word type, int size_bits, se
             error = seL4_CNode_Copy(seL4_CapInitThreadCNode, free_slot, CONFIG_WORD_SIZE,
                                     seL4_CapInitThreadCNode, orig_caps(prev), CONFIG_WORD_SIZE, seL4_AllRights);
             ZF_LOGF_IFERR(error, "");
+            ZF_LOGI("copy the preview\n");
             return 0;
         }
     }

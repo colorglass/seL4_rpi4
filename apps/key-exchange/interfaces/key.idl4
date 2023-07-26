@@ -1,8 +1,0 @@
-// Called from key-exchange.
-// Give established keys to encrypt/decrypt.
-// Need to use a dataport no smaller than 4392 bytes (Here I use 8291),
-// which is the size of a gec_sym_key.
-procedure key {
-    include <my_type.h>;
-    void send(refin struct gec_sym_key symkey);
-}

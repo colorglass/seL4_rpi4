@@ -1,4 +1,0 @@
-component GPIO {
-    hardware;
-    dataport Buf(4096) mem;
-}
