@@ -1235,10 +1235,21 @@ static int main_continued(void)
     assert(!err);
 
     /* Create CPUs and DTB node */
-    for (int i = 0; i < NUM_VCPUS; i++) {
-        vm_vcpu_t *new_vcpu = create_vmm_plat_vcpu(&vm, VM_PRIO - 1);
-        assert(new_vcpu);
+    // for (int i = 0; i < NUM_VCPUS; i++) {
+    //     vm_vcpu_t *new_vcpu = create_vmm_plat_vcpu(&vm, VM_PRIO - 1);
+    //     assert(new_vcpu);
+    // }
+
+    /* custom code, all the vm use only one vcpu */
+    /* this will create a vcpu with vcpu_id=0 and affnity=0 by default */
+    vm_vcpu_t *new_vcpu = create_vmm_plat_vcpu(&vm,VM_PRIO - 1);
+    /* therefore we manauly bind the vm1's vcpu to the core 1 */
+    /* so that vm0 and vm1 can occupy the entire core0 and core1, respectively  */
+    if(strncmp(get_instance_name(),"vm1",3) == 0)
+    {
+        seL4_TCB_SetAffinity(new_vcpu->tcb.tcb.cptr,1);
     }
+
     if (vm_config.generate_dtb) {
         err = fdt_generate_plat_vcpu_node(&vm, gen_dtb_buf);
         if (err) {
@@ -1280,6 +1291,8 @@ static int main_continued(void)
         ZF_LOGE("Failed to start Boot VCPU");
         return -1;
     }
+
+    seL4_DebugDumpScheduler();
 
     while (1) {
         err = vm_run(&vm);

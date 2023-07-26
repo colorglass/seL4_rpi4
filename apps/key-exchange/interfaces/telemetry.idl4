@@ -1,4 +1,0 @@
-procedure telemetry {
-    include <my_type.h>;
-    uint8_t send(refin telemetry_buf_t buf, in uint32_t len);
-}

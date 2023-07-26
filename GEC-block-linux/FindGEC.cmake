@@ -1,1 +1,0 @@
-../GEC-block/FindGEC.cmake

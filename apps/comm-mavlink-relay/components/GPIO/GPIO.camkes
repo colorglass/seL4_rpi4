@@ -1,4 +1,0 @@
-component GPIOHW {
-    hardware;
-    dataport Buf(4096) mem;
-}
