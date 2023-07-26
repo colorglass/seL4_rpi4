@@ -41,4 +41,4 @@ echo -e "${GREEN}CMake Configuration complete\n${NC}"
 ninja -C $build_dir
 
 echo -e "${GREEN}Build complete${NC}"
-echo -e "${GREEN}Image included path:${NC} $build_dir/images/"
+echo -e "${GREEN}Image path:${NC} $build_dir/images/$(ls $build_dir/images/)"

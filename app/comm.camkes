@@ -37,6 +37,8 @@ assembly {
         // telem_rx.affinity   = 2;
         decrypt.affinity    = 2;
         encrypt.affinity    = 2;
+        vm0.affinity = 0;
+        vm1.affinity = 1;
 
         rx.priority = HIGHEST_PRIORITY;
         // pixhawk_rx.priority = HIGHEST_PRIORITY;
